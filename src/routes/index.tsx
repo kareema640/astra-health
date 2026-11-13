@@ -1,13 +1,16 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ArrowRight } from "lucide-react";
-import type { FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 
 import { AuthDivider } from "@/components/auth/AuthDivider";
 import { AuthField } from "@/components/auth/AuthField";
 import { AuthScene } from "@/components/auth/AuthScene";
+import { AuthStatusLine, CtaSpinner } from "@/components/auth/AuthStatusLine";
 import { CometStreak } from "@/components/auth/CometStreak";
 import { AstronautIcon, LockIcon, PersonIcon, PersonPlusIcon } from "@/components/auth/icons";
 import { SocialLogins } from "@/components/auth/SocialLogins";
+import { ApiError, authApi } from "@/lib/auth-api";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -30,11 +33,42 @@ export const Route = createFileRoute("/")({
 });
 
 function LoginPage() {
-  const handleSubmit = (e: FormEvent<HTMLFormElement>) => e.preventDefault();
+  const navigate = useNavigate();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<ApiError | null>(null);
+
+  const fieldIssue = (name: string) => (error?.fields[name] ? "auth-field-error" : undefined);
+
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (busy) return;
+    setBusy(true);
+    setError(null);
+    const data = new FormData(e.currentTarget);
+    try {
+      await authApi.login({
+        astronautId: String(data.get("astronautId") ?? ""),
+        password: String(data.get("password") ?? ""),
+      });
+      // The dashboard is not wired to the backend yet (roadmap), so a successful
+      // sign-in resumes the profile flow, mirroring the Sign Up destination.
+      navigate({ to: "/onboarding/basic-info" });
+    } catch (err) {
+      setError(
+        err instanceof ApiError
+          ? err
+          : new ApiError(0, "UNKNOWN", "Something went wrong. Try again."),
+      );
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const statusMessage = error ? (Object.values(error.fields)[0] ?? error.message) : null;
 
   return (
     <AuthScene header={{ left: 48, top: 32 }} card={{ left: 102, top: 192, width: 653, height: 685 }}>
-      <div className="flex h-full flex-col px-[58px] pt-[37px]">
+      <div className="relative flex h-full flex-col px-[58px] pt-[37px]">
         <div className="relative pl-[13px]">
           <h1 className="font-bold tracking-[-0.005em]">
             <span className="block text-[49px] leading-[54px] text-foreground">Welcome Back,</span>
@@ -69,7 +103,9 @@ function LoginPage() {
           </Link>
         </nav>
 
-        <form onSubmit={handleSubmit} className="contents">
+        {/* noValidate: server-side rules are authoritative so every field gets
+            the designed error feedback instead of a browser-native bubble. */}
+        <form onSubmit={handleSubmit} noValidate className="contents">
           <AuthField
             size="login"
             icon={PersonIcon}
@@ -77,7 +113,7 @@ function LoginPage() {
             name="astronautId"
             placeholder="Astronaut ID"
             autoComplete="username"
-            className="mt-[21px]"
+            className={cn("mt-[21px]", fieldIssue("astronautId"))}
           />
           <AuthField
             size="login"
@@ -87,14 +123,23 @@ function LoginPage() {
             placeholder="Password"
             autoComplete="current-password"
             reveal="eye"
-            className="mt-[15px]"
+            className={cn("mt-[15px]", fieldIssue("password"))}
           />
           <button
             type="submit"
-            className="auth-cta mt-[16px] flex h-[68px] w-full items-center justify-center gap-[10px] rounded-full text-[24.5px] font-bold"
+            disabled={busy}
+            aria-busy={busy}
+            className={cn(
+              "auth-cta mt-[16px] flex h-[68px] w-full items-center justify-center gap-[10px] rounded-full text-[24.5px] font-bold",
+              busy && "cursor-progress opacity-90",
+            )}
           >
-            Continue
-            <ArrowRight className="size-[26px]" strokeWidth={2.4} />
+            {busy ? "Signing in" : "Continue"}
+            {busy ? (
+              <CtaSpinner className="size-[26px] animate-spin" />
+            ) : (
+              <ArrowRight className="size-[26px]" strokeWidth={2.4} />
+            )}
           </button>
         </form>
 
@@ -105,6 +150,8 @@ function LoginPage() {
         <div className="mt-[12px]">
           <SocialLogins />
         </div>
+
+        <AuthStatusLine message={statusMessage} />
       </div>
     </AuthScene>
   );

@@ -424,8 +424,13 @@
   text-decoration-thickness: 1px;
   text-underline-offset: 4px;
   transition: color 150ms ease;
-
   &:hover {
     color: var(--foreground);
   }
+}
+
+/* Server-side validation feedback on auth fields: coral rim in the error palette.
+   Only swaps colors inside the existing field chrome — geometry is untouched. */
+.auth-field-error {
+  border-color: var(--coral);
 }
