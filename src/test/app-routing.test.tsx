@@ -14,4 +14,22 @@ describe("App routing", () => {
 
     expect(matches.at(-1)?.routeId).not.toBe(rootRouteId);
   });
+
+  it("matches the signup page at /signup", () => {
+    const router = createRouter({ routeTree, context: { queryClient: new QueryClient() } });
+
+    expect(router.matchRoutes("/signup").at(-1)?.routeId).toBe("/signup");
+  });
+
+  it.each([
+    "/onboarding/basic-info",
+    "/onboarding/vital-signs",
+    "/onboarding/heart-recovery",
+    "/onboarding/muscle-bone",
+    "/onboarding/avatar",
+  ])("matches the onboarding step at %s", (path) => {
+    const router = createRouter({ routeTree, context: { queryClient: new QueryClient() } });
+
+    expect(router.matchRoutes(path).at(-1)?.routeId).toBe(path);
+  });
 });

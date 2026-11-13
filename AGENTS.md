@@ -28,3 +28,10 @@ use the editor.
   own key and store it in Secrets.
 - **Secrets.** Lovable manages them. Do not put secret values in the repo.
 <!-- LOVABLE:END -->
+
+## Project rules
+
+- Auth screens (`src/components/auth/`) are authored on a fixed 1600×900 artboard matching the reference designs and scaled with CSS `zoom` via `useStageScale`; keep new artboard measurements in reference pixels so they stay comparable to the designs.
+- Page background color comes from the `--background` token only; the space artwork is pre-graded to that same color, so change both together.
+- Health-profile steps live under `/onboarding/*` as child routes of `src/routes/onboarding.tsx`, whose `OnboardingProvider` holds every answer (mirrored to sessionStorage) so Back/Continue never lose input; step order and Back/next targets come only from `src/components/onboarding/steps.ts`.
+- Onboarding screens use their own 1600×1000 artboard (the step designs are 16:10) through `OnboardingScene`, reusing the auth `SpaceBackdrop` and `useStageScale`; `data-stage` on the scene enables the `compact:` variant for the stacked small-screen layout.

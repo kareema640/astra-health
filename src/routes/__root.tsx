@@ -75,27 +75,36 @@ function ErrorComponent({ error, reset }: ErrorComponentProps) {
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   head: () => ({
-    // Replace these placeholders with the app's name and description when first building the app.
     // Each content route, / included, must still set its own head(). Never add og:image or
     // twitter:image here: every page without its own would inherit the root's preview image.
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
-      { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { title: "Astra Health Monitoring System" },
+      {
+        name: "description",
+        content: "Astra Health monitors, predicts and protects astronaut health during missions.",
+      },
+      { property: "og:title", content: "Astra Health Monitoring System" },
+      {
+        property: "og:description",
+        content: "Astra Health monitors, predicts and protects astronaut health during missions.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:site", content: "@Lovable" },
     ],
     links: [
       {
         rel: "stylesheet",
         href: appCss,
       },
-      { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
+      { rel: "icon", type: "image/png", href: "/favicon.png" },
+      { rel: "preconnect", href: "https://fonts.googleapis.com" },
+      { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
+      {
+        rel: "stylesheet",
+        href: "https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&display=swap",
+      },
     ],
   }),
   shellComponent: RootShell,
