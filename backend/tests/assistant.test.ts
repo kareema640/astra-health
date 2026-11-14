@@ -97,7 +97,13 @@ describe("POST /api/assistant/messages", () => {
     const body = last.body as { contents: { role: string; parts: { text?: string }[] }[] };
     const userContent = body.contents.at(-1)!.parts[0]!.text ?? "";
     expect(content).toContain("You are ASTRA, a friendly and intelligent AI Health Assistant");
-    expect(content).toContain("Always respond in the language used by the astronaut.");
+    // v3 prompt: astronaut's language + the step-by-step assessment rules
+    expect(content).toContain("Always respond in the astronaut's language.");
+    expect(content).toContain("HEALTH ASSESSMENT INTERACTION:");
+    expect(content).toContain("Ask ONE question at a time.");
+    expect(content).toContain(
+      "Ask ONLY about measurements that are unavailable in the health data.",
+    );
     expect(userContent).toContain("AST-AST1");
     expect(userContent).toContain('"heart_rate": 75');
     expect(userContent).toContain("How is my heart doing today?");
