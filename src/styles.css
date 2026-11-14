@@ -1,0 +1,780 @@
+/*
+ * Tailwind v4 entry: config lives here, with no tailwind.config.js or PostCSS plugin.
+ * - Keep every @import in this top block, above @theme and the rest of the file. Install an
+ *   npm package before @importing its CSS. Never @import a remote URL (web fonts, CDN CSS): the
+ *   build resolves @import from the filesystem. Load those with a <link> in the head() of
+ *   src/routes/__root.tsx and name the family in a --font-* token in @theme inline below.
+ */
+@import "tailwindcss" source(none);
+@source "../src";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+/* Narrow/portrait layout of the scaled artboard screens (see useStageScale). */
+@custom-variant compact (&:where([data-stage="compact"] *));
+
+/*
+ * Design system definition.
+ *
+ * The design lives in this file: oklch color tokens on the shadcn variables
+ * (--background, --foreground, --primary, --secondary, --muted, --accent, ...) plus
+ * new tokens as needed, font tokens, and custom styles and animations.
+ *
+ * The @theme inline block maps CSS custom properties to Tailwind utility
+ * classes (e.g. --color-primary -> bg-primary, text-primary).
+ *
+ * The :root and .dark blocks define the actual color values using oklch.
+ * All colors MUST use oklch format.
+ *
+ * To add a new semantic color:
+ * 1. Add the variable to :root (light value) and .dark (dark value)
+ * 2. Register it in @theme inline as --color-<name>: var(--<name>)
+ */
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 12px);
+  --radius-4xl: calc(var(--radius) + 16px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-ring-offset-background: var(--background);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-coral: var(--coral);
+  --color-ember: var(--ember);
+  --color-cream: var(--cream);
+  --color-navy: var(--navy);
+  --color-field: var(--field);
+  --color-field-border: var(--field-border);
+  --color-tile: var(--tile);
+  --color-tile-border: var(--tile-border);
+  --color-hairline: var(--hairline);
+  --color-placeholder: var(--placeholder);
+  --color-onb-muted: var(--onb-muted);
+  --color-onb-label: var(--onb-label);
+  --color-onb-body: var(--onb-body);
+  --color-onb-placeholder: var(--onb-placeholder);
+  --color-onb-ink: var(--onb-ink);
+  --color-onb-border: var(--onb-border);
+  --color-onb-dashed: var(--onb-dashed);
+  --color-onb-progress: var(--onb-progress);
+  --color-selection: var(--selection);
+  --color-onb-tile: var(--onb-tile);
+  --color-onb-tile-border: var(--onb-tile-border);
+  --color-platform: var(--platform);
+  --color-swatch-purple: var(--swatch-purple);
+  --color-swatch-green: var(--swatch-green);
+  --color-swatch-blue: var(--swatch-blue);
+  --color-swatch-yellow: var(--swatch-yellow);
+  --color-swatch-teal: var(--swatch-teal);
+  --color-suit-red: var(--accent-red);
+  --color-suit-blue: var(--accent-blue);
+  --color-suit-gold: var(--accent-gold);
+  --color-suit-green: var(--accent-green);
+  --color-suit-white: var(--accent-white);
+  --color-dash-cyan: var(--dash-cyan);
+  --color-dash-ice: var(--dash-ice);
+  --color-dash-blue: var(--dash-blue);
+  --color-dash-pink: var(--dash-pink);
+  --color-dash-green: var(--dash-green);
+  --color-dash-amber: var(--dash-amber);
+  --color-dash-muted: var(--dash-muted);
+  --color-dash-track: var(--dash-track);
+  --color-dash-line: var(--dash-line);
+  --font-sans: "Google Sans", "Product Sans", system-ui, sans-serif;
+}
+
+/*
+ * Astra Health palette. --background is sampled from the dashboard reference
+ * (rgb 7 35 91) and is the single source for every page background.
+ */
+:root {
+  --radius: 0.875rem;
+  --background: oklch(0.2766 0.1062 262.02);
+  --foreground: oklch(1 0 0);
+  --card: oklch(0.1726 0.0441 263.23);
+  --card-foreground: oklch(1 0 0);
+  --popover: oklch(0.1726 0.0441 263.23);
+  --popover-foreground: oklch(1 0 0);
+  --primary: oklch(0.7059 0.1863 29.07);
+  --primary-foreground: oklch(1 0 0);
+  --secondary: oklch(0.9358 0.0222 63.2);
+  --secondary-foreground: oklch(0.1709 0.0572 272.52);
+  --muted: oklch(0.2392 0.0551 263.41);
+  --muted-foreground: oklch(0.8434 0.0169 274.78);
+  --accent: oklch(0.7059 0.1863 29.07);
+  --accent-foreground: oklch(1 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --destructive-foreground: oklch(1 0 0);
+  --border: oklch(1 0 0 / 18%);
+  --input: oklch(1 0 0 / 18%);
+  --ring: oklch(0.7059 0.1863 29.07 / 60%);
+  --chart-1: oklch(0.646 0.222 41.116);
+  --chart-2: oklch(0.6 0.118 184.704);
+  --chart-3: oklch(0.398 0.07 227.392);
+  --chart-4: oklch(0.828 0.189 84.429);
+  --chart-5: oklch(0.769 0.188 70.08);
+  --sidebar: oklch(0.2766 0.1062 262.02);
+  --sidebar-foreground: oklch(1 0 0);
+  --sidebar-primary: oklch(0.7059 0.1863 29.07);
+  --sidebar-primary-foreground: oklch(1 0 0);
+  --sidebar-accent: oklch(0.2392 0.0551 263.41);
+  --sidebar-accent-foreground: oklch(1 0 0);
+  --sidebar-border: oklch(1 0 0 / 18%);
+  --sidebar-ring: oklch(0.7059 0.1863 29.07 / 60%);
+
+  /* Auth screens */
+  --coral: oklch(0.7059 0.1863 29.07);
+  --ember: oklch(0.7269 0.1748 40.39);
+  --cream: oklch(0.9358 0.0222 63.2);
+  --navy: oklch(0.1709 0.0572 272.52);
+  --glass: oklch(0.1726 0.0441 263.23 / 90%);
+  --glass-deep: oklch(0.2392 0.0551 263.41 / 95%);
+  --field: oklch(0.2392 0.0551 263.41 / 55%);
+  --field-border: oklch(1 0 0 / 17%);
+  --tile: oklch(1 0 0 / 4%);
+  --tile-border: oklch(1 0 0 / 11%);
+  --hairline: oklch(1 0 0 / 30%);
+  --placeholder: oklch(0.8434 0.0169 274.78);
+
+  --gradient-glass:
+    radial-gradient(70% 30% at 85% 100%, oklch(0.7269 0.1748 40.39 / 10%) 0%, transparent 100%),
+    linear-gradient(180deg, var(--glass) 0%, var(--glass-deep) 100%);
+  --gradient-rim:
+    radial-gradient(60px 190px at 0% 33%, var(--coral) 0%, var(--coral) 35%, transparent 100%),
+    radial-gradient(220px 200px at 100% 100%, var(--cream) 0%, var(--ember) 45%, transparent 100%),
+    radial-gradient(160px 100px at 0% 100%, var(--ember) 0%, transparent 100%),
+    linear-gradient(170deg, oklch(1 0 0 / 80%) 0%, oklch(1 0 0 / 45%) 45%, oklch(1 0 0 / 55%) 100%);
+  --gradient-halo:
+    radial-gradient(40px 170px at 0% 34%, oklch(0.7059 0.1863 29.07 / 70%) 0%, transparent 100%),
+    radial-gradient(170px 140px at 100% 100%, oklch(0.7269 0.1748 40.39 / 90%) 0%, transparent 100%),
+    radial-gradient(130px 80px at 0% 100%, oklch(0.7269 0.1748 40.39 / 55%) 0%, transparent 100%);
+  --shadow-pill: 0 0 22px oklch(0.7059 0.1863 29.07 / 45%), inset 0 1px 0 oklch(1 0 0 / 25%);
+  --shadow-cta: 0 6px 24px oklch(0.9358 0.0222 63.2 / 18%);
+
+  /* Health-profile steps (sampled from the step designs) */
+  --onb-card: oklch(0.213 0.0664 272.04 / 92%);
+  --onb-card-border: oklch(0.3592 0.077 273.22);
+  --onb-input: oklch(0.2047 0.0782 268.68);
+  --onb-border: oklch(0.3867 0.0868 274.88);
+  --onb-tile: oklch(0.1771 0.0746 266.87);
+  --onb-tile-border: oklch(0.3184 0.0914 275);
+  --onb-dashed: oklch(0.5321 0.0932 276.16);
+  --onb-muted: oklch(0.8017 0.0485 277.37);
+  --onb-label: oklch(0.9236 0.0322 272.27);
+  --onb-body: oklch(0.8465 0.0498 273.93);
+  --onb-placeholder: oklch(0.5622 0.0114 267.29);
+  --onb-ink: oklch(0.1418 0.0403 268.25);
+  --onb-progress: oklch(0.3395 0.0865 272.35);
+  --selection: oklch(0.5721 0.228 27.46);
+  --gradient-preview: linear-gradient(180deg, oklch(0.3585 0.1347 266.44) 0%, oklch(0.2485 0.0954 267.77) 100%);
+  --platform: oklch(0.8005 0.0681 306.57);
+
+  /* Avatar skin and suit accent swatches */
+  --swatch-purple: oklch(0.6248 0.251 304.38);
+  --swatch-green: oklch(0.7982 0.1881 128.58);
+  --swatch-blue: oklch(0.7116 0.1543 252.88);
+  --swatch-yellow: oklch(0.8571 0.1526 84.74);
+  --swatch-teal: oklch(0.7941 0.1276 186.01);
+  --accent-red: oklch(0.6867 0.1952 25.78);
+  --accent-blue: oklch(0.6902 0.1636 258.93);
+  --accent-gold: oklch(0.8662 0.1507 87.37);
+  --accent-green: oklch(0.7994 0.1329 180.81);
+  --accent-white: oklch(0.9935 0.0026 106.45);
+
+  /* Dashboard (sampled from the dashboard reference) */
+  --dash-cyan: oklch(0.8 0.135 228);
+  --dash-ice: oklch(0.9 0.065 230);
+  --dash-blue: oklch(0.64 0.19 254);
+  --dash-pink: oklch(0.67 0.26 340);
+  --dash-green: oklch(0.82 0.2 148);
+  --dash-amber: oklch(0.84 0.15 78);
+  --dash-muted: oklch(0.84 0.045 255);
+  --dash-track: oklch(0.42 0.1 258 / 55%);
+  --dash-line: oklch(0.8 0.08 245 / 22%);
+  --dash-card-border: oklch(0.76 0.12 238 / 55%);
+  --gradient-dash-card:
+    radial-gradient(120% 80% at 0% 0%, oklch(0.55 0.15 250 / 32%) 0%, transparent 60%),
+    linear-gradient(180deg, oklch(0.36 0.13 260 / 62%) 0%, oklch(0.25 0.1 263 / 72%) 100%);
+  --gradient-dash-panel: linear-gradient(180deg, oklch(0.36 0.12 260 / 55%) 0%, oklch(0.28 0.11 262 / 40%) 100%);
+  --gradient-dash-active: linear-gradient(180deg, oklch(0.7 0.17 248) 0%, oklch(0.55 0.21 258) 100%);
+  --gradient-dash-cta: linear-gradient(180deg, oklch(0.8 0.13 232) 0%, oklch(0.64 0.18 250) 100%);
+  --shadow-dash-card: 0 0 22px oklch(0.7 0.15 240 / 28%), inset 0 1px 0 oklch(1 0 0 / 14%);
+  --shadow-dash-active: 0 0 24px oklch(0.68 0.18 248 / 70%), inset 0 1px 0 oklch(1 0 0 / 35%);
+  --shadow-dash-ring: 0 0 22px oklch(0.8 0.135 228 / 75%), inset 0 0 18px oklch(0.8 0.135 228 / 45%);
+  --shadow-dash-orbit: 0 0 14px oklch(0.7269 0.1748 40.39 / 90%), inset 0 0 8px oklch(0.7269 0.1748 40.39 / 70%);
+  --gradient-calm-card: linear-gradient(
+    155deg,
+    rgba(16, 44, 102, 0.72) 0%,
+    rgba(10, 29, 71, 0.86) 100%
+  );
+  --calm-card-border: rgba(96, 165, 250, 0.28);
+  --shadow-calm-card: 0 14px 36px rgba(4, 11, 30, 0.38), inset 0 1px 0 rgba(147, 197, 253, 0.14);
+}
+
+:root.astra-light {
+  --background: oklch(0.95 0.015 250);
+  --foreground: oklch(0.2 0.05 262);
+  --card: oklch(0.99 0.005 250);
+  --card-foreground: oklch(0.2 0.05 262);
+  --border: oklch(0.25 0.06 260 / 16%);
+  --dash-muted: oklch(0.45 0.04 255);
+  --dash-line: oklch(0.35 0.08 250 / 20%);
+  --dash-card-border: oklch(0.55 0.14 250 / 32%);
+  --gradient-dash-card:
+    radial-gradient(120% 80% at 0% 0%, oklch(0.86 0.06 250 / 45%) 0%, transparent 60%),
+    linear-gradient(180deg, oklch(0.98 0.01 250 / 92%) 0%, oklch(0.93 0.02 252 / 96%) 100%);
+  --gradient-dash-panel: linear-gradient(180deg, oklch(0.96 0.015 250 / 90%) 0%, oklch(0.91 0.025 252 / 92%) 100%);
+  --shadow-dash-card: 0 10px 26px oklch(0.35 0.06 255 / 12%), inset 0 1px 0 oklch(1 0 0 / 70%);
+  --gradient-calm-card: linear-gradient(
+    155deg,
+    rgba(255, 255, 255, 0.94) 0%,
+    rgba(235, 243, 255, 0.94) 100%
+  );
+  --calm-card-border: rgba(59, 130, 246, 0.28);
+  --shadow-calm-card: 0 14px 32px rgba(15, 38, 92, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+
+  html,
+  body,
+  #root {
+    width: 100%;
+    min-height: 100%;
+    margin: 0;
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+}
+
+/* Glass card used by the login and signup screens. */
+@utility auth-card {
+  position: relative;
+  isolation: isolate;
+  border-radius: 48px;
+  background: var(--gradient-glass);
+  box-shadow: inset 0 0 22px oklch(1 0 0 / 7%), 0 0 18px oklch(1 0 0 / 8%);
+  backdrop-filter: blur(28px);
+  -webkit-backdrop-filter: blur(28px);
+
+  /* Gradient rim: white highlight with coral/ember light at the edges. */
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 2.5px;
+    background: var(--gradient-rim);
+    -webkit-mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+
+  /* Soft outer glow that bleeds out of the lit corners. */
+  &::after {
+    content: "";
+    position: absolute;
+    inset: -14px;
+    z-index: -1;
+    border-radius: 60px;
+    background: var(--gradient-halo);
+    filter: blur(16px);
+    pointer-events: none;
+  }
+}
+
+@utility auth-field {
+  border-radius: 9999px;
+  border: 1.5px solid var(--field-border);
+  background: var(--field);
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+
+  &:focus-within {
+    border-color: var(--ring);
+    box-shadow: 0 0 0 3px oklch(0.7059 0.1863 29.07 / 18%);
+  }
+}
+
+@utility auth-pill-active {
+  background: var(--coral);
+  box-shadow: var(--shadow-pill);
+}
+
+@utility auth-cta {
+  background: var(--cream);
+  color: var(--navy);
+  box-shadow: var(--shadow-cta);
+  transition: filter 150ms ease, transform 150ms ease;
+
+  &:hover {
+    filter: brightness(1.04);
+  }
+
+  &:active {
+    transform: translateY(1px);
+  }
+}
+
+@utility auth-tile {
+  border-radius: 14px;
+  border: 1.5px solid var(--tile-border);
+  background: var(--tile);
+  transition: background-color 150ms ease, border-color 150ms ease;
+
+  &:hover {
+    background: oklch(1 0 0 / 9%);
+    border-color: oklch(1 0 0 / 22%);
+  }
+}
+
+@utility hairline-l {
+  background: linear-gradient(90deg, transparent 0%, var(--hairline) 100%);
+}
+
+@utility hairline-r {
+  background: linear-gradient(90deg, var(--hairline) 0%, transparent 100%);
+}
+
+@utility stage-fade-in {
+  animation: stage-fade-in 450ms ease-out both;
+}
+
+@keyframes stage-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Health-profile step cards: dark glass with a thin lavender rim. */
+@utility onb-card {
+  border-radius: 36px;
+  border: 1.5px solid var(--onb-card-border);
+  background: var(--onb-card);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+}
+
+@utility onb-field {
+  border-radius: 9999px;
+  border: 1.5px solid var(--onb-border);
+  background: var(--onb-input);
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+
+  &:focus-within {
+    border-color: var(--ring);
+    box-shadow: 0 0 0 3px oklch(0.7059 0.1863 29.07 / 18%);
+  }
+}
+
+@utility onb-chip {
+  border-radius: 9999px;
+  border: 1.5px solid var(--onb-border);
+  color: var(--foreground);
+  transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease;
+
+  &:hover {
+    border-color: oklch(0.5321 0.0932 276.16);
+  }
+
+  &[aria-checked="true"],
+  &[aria-pressed="true"] {
+    border-color: var(--coral);
+    background: var(--coral);
+    color: var(--onb-ink);
+  }
+}
+
+@utility onb-tile {
+  border-radius: 14px;
+  border: 1.5px solid var(--onb-tile-border);
+  background: var(--onb-tile);
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+
+  &:hover {
+    border-color: oklch(0.5321 0.0932 276.16);
+  }
+
+  &[aria-checked="true"] {
+    border-color: var(--selection);
+    box-shadow: inset 0 0 0 1.5px var(--selection);
+  }
+}
+
+@utility onb-dashed {
+  border: 1.5px dashed var(--onb-dashed);
+}
+
+@utility onb-preview {
+  background: var(--gradient-preview);
+}
+
+/* Color swatch (skin / suit accent); the selected one gets a red ring with a gap. */
+@utility onb-swatch {
+  border-radius: 9999px;
+  outline: 2.5px solid transparent;
+  outline-offset: 3px;
+  transition: outline-color 150ms ease, transform 150ms ease;
+
+  &:hover {
+    transform: scale(1.06);
+  }
+
+  &[aria-checked="true"] {
+    outline-color: var(--selection);
+  }
+}
+
+/* White square checkbox from the step designs; coral once ticked. */
+@utility onb-check {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  background: var(--foreground);
+  color: var(--onb-ink);
+  transition: background-color 150ms ease;
+
+  &[data-state="checked"] {
+    background: var(--coral);
+  }
+}
+
+/* Underlined text action ("Skip for now", "Remove"). */
+@utility onb-skip {
+  color: var(--onb-label);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 4px;
+  transition: color 150ms ease;
+
+  &:hover {
+    color: var(--foreground);
+  }
+}
+
+/* ---------- Dashboard ---------- */
+
+/* Sidebar glass: dark blue glass with a glowing cyan right border. */
+@utility dash-panel {
+  background: linear-gradient(180deg, rgba(11, 34, 88, 0.84) 0%, rgba(7, 24, 66, 0.88) 100%);
+  border-right: 1.5px solid rgba(56, 189, 248, 0.65);
+  box-shadow: 6px 0 24px rgba(0, 229, 255, 0.2);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+/* Glowing glass card used for every dashboard panel. */
+@utility dash-card {
+  border-radius: 24px;
+  border: 1.5px solid var(--dash-card-border);
+  background: var(--gradient-dash-card);
+  box-shadow: var(--shadow-dash-card);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+/* Calmer, flatter semi-transparent glass card for Profile & Settings. */
+@utility dash-card-calm {
+  border-radius: 24px;
+  border: 1.5px solid var(--calm-card-border);
+  background: var(--gradient-calm-card);
+  box-shadow: var(--shadow-calm-card);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+/* Clickable card: brightens its rim on hover / focus. */
+@utility dash-card-link {
+  transition: border-color 150ms ease, box-shadow 150ms ease, transform 150ms ease;
+
+  &:hover,
+  &:focus-visible {
+    border-color: var(--dash-cyan);
+    box-shadow: 0 0 28px oklch(0.8 0.135 228 / 45%), inset 0 1px 0 oklch(1 0 0 / 18%);
+  }
+}
+
+@utility dash-nav-active {
+  border: 1px solid rgba(147, 197, 253, 0.72);
+  background: linear-gradient(180deg, #1e90ff 0%, #3b82f6 100%);
+  box-shadow:
+    0 0 18px rgba(0, 229, 255, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.32);
+  color: #ffffff;
+}
+
+@utility dash-pill {
+  border-radius: 9999px;
+  border: 1.5px solid var(--dash-card-border);
+  background: oklch(0.3 0.11 262 / 60%);
+  box-shadow: 0 0 16px oklch(0.7 0.15 240 / 22%);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* Glowing circular frame around avatar portraits and the assistant robot. */
+@utility dash-ring {
+  border-radius: 9999px;
+  border: 3px solid var(--dash-cyan);
+  background: radial-gradient(circle at 50% 35%, oklch(0.42 0.14 262) 0%, oklch(0.24 0.1 264) 75%);
+  box-shadow: var(--shadow-dash-ring);
+}
+
+/* Coral orbit ring drawn around the full-body avatar. */
+@utility dash-orbit {
+  border-radius: 50%;
+  border: 3px solid var(--ember);
+  box-shadow: var(--shadow-dash-orbit);
+}
+
+@utility dash-cta {
+  background: var(--gradient-dash-cta);
+  color: var(--onb-ink);
+  box-shadow: 0 0 18px oklch(0.8 0.135 228 / 45%);
+  transition: filter 150ms ease, transform 150ms ease;
+
+  &:hover {
+    filter: brightness(1.07);
+  }
+
+  &:active {
+    transform: translateY(1px);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    filter: none;
+  }
+}
+
+@utility dash-ghost {
+  border: 1.5px solid var(--dash-card-border);
+  color: var(--foreground);
+  transition: background-color 150ms ease, border-color 150ms ease;
+
+  &:hover {
+    border-color: var(--dash-cyan);
+    background: oklch(0.8 0.135 228 / 12%);
+  }
+}
+
+@utility dash-input {
+  border-radius: 14px;
+  border: 1.5px solid var(--dash-card-border);
+  background: oklch(0.22 0.09 264 / 70%);
+  color: var(--foreground);
+  outline: none;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+
+  &::placeholder {
+    color: var(--dash-muted);
+    opacity: 0.7;
+  }
+
+  &:focus {
+    border-color: var(--dash-cyan);
+    box-shadow: 0 0 0 3px oklch(0.8 0.135 228 / 22%);
+  }
+}
+
+/* Thin scrollbar for the dashboard content area. */
+@utility dash-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: oklch(0.8 0.08 245 / 40%) transparent;
+}
+
+@utility dash-float {
+  animation: dash-float 6s ease-in-out infinite;
+}
+
+@keyframes dash-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@utility dash-orbit-spin {
+  animation: dash-orbit-spin 8s ease-in-out infinite;
+}
+
+@utility dash-orbit-spin-alt {
+  animation: dash-orbit-spin-alt 10s ease-in-out infinite;
+}
+
+@keyframes dash-orbit-spin {
+  0%,
+  100% {
+    transform: translateX(-50%) rotate(9deg) scale(1);
+    opacity: 0.92;
+  }
+  50% {
+    transform: translateX(-50%) rotate(13deg) scale(1.03, 0.97);
+    opacity: 1;
+  }
+}
+
+@keyframes dash-orbit-spin-alt {
+  0%,
+  100% {
+    transform: translateX(-50%) rotate(7deg) scale(1);
+    opacity: 0.9;
+  }
+  50% {
+    transform: translateX(-50%) rotate(3deg) scale(0.97, 1.04);
+    opacity: 1;
+  }
+}
+
+@keyframes pa-palm-left {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(4px);
+  }
+}
+
+@keyframes pa-palm-right {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(-4px);
+  }
+}
+
+@keyframes pa-curl {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  50% {
+    transform: rotate(-16deg);
+  }
+}
+
+@keyframes pa-crunch-torso {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  50% {
+    transform: rotate(10deg);
+  }
+}
+
+@keyframes pa-crunch-legs {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  50% {
+    transform: rotate(-8deg);
+  }
+}
+
+@keyframes pa-tension {
+  0%,
+  100% {
+    opacity: 0.45;
+    transform: scale(0.95);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.06);
+  }
+}
+
+.pa-anim-palm-left {
+  animation: pa-palm-left 1.8s ease-in-out infinite;
+}
+
+.pa-anim-palm-right {
+  animation: pa-palm-right 1.8s ease-in-out infinite;
+}
+
+.pa-anim-curl {
+  animation: pa-curl 2s ease-in-out infinite;
+}
+
+.pa-anim-crunch-torso {
+  animation: pa-crunch-torso 2.2s ease-in-out infinite;
+}
+
+.pa-anim-crunch-legs {
+  animation: pa-crunch-legs 2.2s ease-in-out infinite;
+}
+
+.pa-anim-tension {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: pa-tension 1.4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dash-float,
+  .dash-orbit-spin,
+  .dash-orbit-spin-alt,
+  .pa-anim-palm-left,
+  .pa-anim-palm-right,
+  .pa-anim-curl,
+  .pa-anim-crunch-torso,
+  .pa-anim-crunch-legs,
+  .pa-anim-tension {
+    animation: none;
+  }
+}
