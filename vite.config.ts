@@ -15,4 +15,16 @@ export default defineConfig({
     // nitro/vite builds from this
     server: { entry: "server" },
   },
+  vite: {
+    server: {
+      // Dev-only: allow the sandbox/preview proxy hostname through Vite's
+      // DNS-rebinding host check. Hostnames come from the environment
+      // (VITE_ALLOWED_HOSTS, comma-separated) — nothing session-specific
+      // is hardcoded. Standard localhost access is always allowed anyway.
+      allowedHosts: (process.env["VITE_ALLOWED_HOSTS"] ?? "")
+        .split(",")
+        .map((h) => h.trim())
+        .filter(Boolean),
+    },
+  },
 });
