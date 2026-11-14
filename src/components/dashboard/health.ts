@@ -18,9 +18,13 @@ export function firstName(fullName: string): string | null {
   return first ? first : null;
 }
 
-/** Name used in the greeting: first name, then callsign, then the default astronaut name. */
+/**
+ * Offline/signed-out fallback for the greeting: first name from the local
+ * store, then callsign, then a neutral placeholder — never a fake person.
+ * Signed-in users see the name from their actual account (Overview.tsx).
+ */
 export function displayName(data: OnboardingData): string {
-  return firstName(data.account.fullName) ?? (data.avatar.callsign.trim() || "Sarah");
+  return firstName(data.account.fullName) ?? (data.avatar.callsign.trim() || "Astronaut");
 }
 
 export function avatarChosen(data: OnboardingData) {

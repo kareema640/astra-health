@@ -18,6 +18,7 @@ import { isSignedIn } from "@/lib/health-api";
 import { AvatarPortrait } from "./AvatarArt";
 import { firstName, HYDRATION_LABEL, SLEEP_INFO } from "./health";
 import { useNotifications } from "./notifications-context";
+import { useAccountName } from "./use-account-name";
 
 interface ChatMetric {
   emoji: string;
@@ -37,32 +38,41 @@ interface ChatMessage {
   footnote?: string;
 }
 
-const INITIAL_MESSAGES: ChatMessage[] = [
-  {
-    id: "initial-user",
-    role: "user",
-    text: "How is my health today?",
-  },
-  {
-    id: "initial-assistant",
-    role: "assistant",
-    text: "Your health is stable, Sarah! 💙",
-    subtitle: "All vital signs are within normal range.",
-    metricsTitle: "Key Metrics:",
-    metrics: [
-      { emoji: "❤️", value: "72 bpm", label: "Heart Rate" },
-      { emoji: "💧", value: "98%", label: "SpO₂" },
-      { emoji: "🌡️", value: "36.6°C", label: "Body Temp" },
-      { emoji: "⚡", value: "92%", label: "Energy" },
-    ],
-    closing: "Keep up the great work! 🚀",
-    isDemoNote: true,
-  },
-];
+function initialMessages(userName: string): ChatMessage[] {
+  return [
+    {
+      id: "initial-user",
+      role: "user",
+      text: "How is my health today?",
+    },
+    {
+      id: "initial-assistant",
+      role: "assistant",
+      text: `Your health is stable, ${userName}! 💙`,
+      subtitle: "All vital signs are within normal range.",
+      metricsTitle: "Key Metrics:",
+      metrics: [
+        { emoji: "❤️", value: "72 bpm", label: "Heart Rate" },
+        { emoji: "💧", value: "98%", label: "SpO₂" },
+        { emoji: "🌡️", value: "36.6°C", label: "Body Temp" },
+        { emoji: "⚡", value: "92%", label: "Energy" },
+      ],
+      closing: "Keep up the great work! 🚀",
+      isDemoNote: true,
+    },
+  ];
+}
 
-function buildDemoReply(prompt: string, data: OnboardingData): ChatMessage {
+function buildDemoReply(
+  prompt: string,
+  data: OnboardingData,
+  accountFirst: string | null,
+): ChatMessage {
   const q = prompt.toLowerCase();
-  const userName = firstName(data.account.fullName) ?? (data.avatar.callsign.trim() || "Sarah");
+  const userName =
+    accountFirst ??
+    firstName(data.account.fullName) ??
+    (data.avatar.callsign.trim() || "Astronaut");
   const hr = data.heart.restingHr.trim() || "72";
   const spo2 = data.vitals.spo2.trim() || "98";
   const sleepLabel = data.progress.heart === "done" ? SLEEP_INFO[data.heart.sleep].label : "7–8 h";
@@ -191,7 +201,13 @@ function AiSparkleIcon({ className }: { className?: string }) {
 export function AssistantView() {
   const { data } = useOnboarding();
   const { unread } = useNotifications();
-  const [messages, setMessages] = useState<ChatMessage[]>(INITIAL_MESSAGES);
+  // Registered account name first; local store only while loading/signed out.
+  const { account: accountName, settled } = useAccountName();
+  const userName =
+    accountName?.first ??
+    firstName(data.account.fullName) ??
+    (data.avatar.callsign.trim() || "Astronaut");
+  const [messages, setMessages] = useState<ChatMessage[]>(() => initialMessages(userName));
   const [draft, setDraft] = useState("");
   const [isReplying, setIsReplying] = useState(false);
   // True once the backend assistant is reachable for this signed-in account.
@@ -199,9 +215,8 @@ export function AssistantView() {
   const scrollEndRef = useRef<HTMLDivElement>(null);
   const replyTimerRef = useRef<number | null>(null);
   const conversationIdRef = useRef<string | null>(null);
-  const initialCountRef = useRef(INITIAL_MESSAGES.length);
+  const initialCountRef = useRef(initialMessages(userName).length);
 
-  const userName = firstName(data.account.fullName) ?? (data.avatar.callsign.trim() || "Sarah");
   const badgeCount = unread > 0 ? unread : 3;
   const isModified = messages.length > initialCountRef.current;
 
@@ -220,6 +235,9 @@ export function AssistantView() {
   // Connect to the integrated assistant: probe once, then restore the most
   // recent conversation. Any failure keeps the original demo experience.
   useEffect(() => {
+    // Wait until the account-name lookup has finished so welcomes greet the
+    // right person (settled is immediate when signed out).
+    if (!settled) return;
     let cancelled = false;
     const boot = async () => {
       if (!isSignedIn()) return;
@@ -248,9 +266,10 @@ export function AssistantView() {
     return () => {
       cancelled = true;
     };
-    // Mount only: reconnecting on every render would duplicate history reads.
+    // Boot runs once per settled name; reconnecting on every render would
+    // duplicate history reads.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [settled]);
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -290,7 +309,7 @@ export function AssistantView() {
           setMessages((prev) => [...prev, replyMsg]);
         } catch {
           // Graceful degradation: the original demo reply, clearly labelled.
-          const demo = buildDemoReply(trimmed, data);
+          const demo = buildDemoReply(trimmed, data, accountName?.first ?? null);
           setMessages((prev) => [
             ...prev,
             { ...demo, footnote: "Backend assistant unreachable — offline demo response shown." },
@@ -303,7 +322,7 @@ export function AssistantView() {
     }
 
     replyTimerRef.current = window.setTimeout(() => {
-      setMessages((prev) => [...prev, buildDemoReply(trimmed, data)]);
+      setMessages((prev) => [...prev, buildDemoReply(trimmed, data, accountName?.first ?? null)]);
       setIsReplying(false);
     }, 520);
   };
@@ -320,8 +339,8 @@ export function AssistantView() {
       initialCountRef.current = 1;
       setMessages(liveWelcomeMessages(userName));
     } else {
-      initialCountRef.current = INITIAL_MESSAGES.length;
-      setMessages(INITIAL_MESSAGES);
+      initialCountRef.current = initialMessages(userName).length;
+      setMessages(initialMessages(userName));
     }
   };
 

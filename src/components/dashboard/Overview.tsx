@@ -10,7 +10,7 @@ import {
   Thermometer,
   type LucideIcon,
 } from "lucide-react";
-import { useMemo, useState, type ComponentType, type SVGProps } from "react";
+import { useEffect, useMemo, useState, type ComponentType, type SVGProps } from "react";
 
 import robot from "@/assets/dashboard/ai-assistant-robot.png.asset.json";
 import { useOnboarding } from "@/components/onboarding/onboarding-store";
@@ -31,6 +31,7 @@ import {
 } from "./health";
 import { LungsIcon, RunnerIcon } from "./icons";
 import { CardHeading } from "./ui";
+import { useAccountName } from "./use-account-name";
 
 /** Main dashboard: responsive astronaut greeting & avatar on the left, health overview grid on the right. */
 export function DashboardOverview() {
@@ -59,7 +60,13 @@ export function DashboardOverview() {
 
 function useGreeting() {
   const { data } = useOnboarding();
-  return { greeting: greetingFor(new Date().getHours()), name: displayName(data) };
+  // The authenticated account is the source of truth for the name; the
+  // local onboarding store only fills the gap while offline or signed out.
+  const { account } = useAccountName();
+  return {
+    greeting: greetingFor(new Date().getHours()),
+    name: account?.first ?? displayName(data),
+  };
 }
 
 function Greeting() {
