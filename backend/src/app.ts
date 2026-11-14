@@ -12,6 +12,7 @@ import { aiRouter, analyticsRouter, documentsRouter, missionsRouter } from "./ro
 import { datasetRouter } from "./routes/dataset";
 import { assistantRouter } from "./routes/assistant";
 import { knowledgeRouter } from "./routes/knowledge";
+import { plannerRouter, workoutRouter } from "./routes/manage";
 export function createApp() {
   const app = express();
   app.disable("x-powered-by");
@@ -73,6 +74,8 @@ export function createApp() {
         "missions",
         "dataset",
         "knowledge",
+        "planner",
+        "workouts",
       ],
     }),
   );
@@ -88,6 +91,8 @@ export function createApp() {
   app.use("/api/missions", missionsRouter);
   app.use("/api/dataset", datasetRouter);
   app.use("/api/knowledge", knowledgeRouter);
+  app.use("/api/planner", plannerRouter);
+  app.use("/api/workouts", workoutRouter);
 
   app.use((_req, res) =>
     res.status(404).json({ error: { code: "NOT_FOUND", message: "Unknown endpoint" } }),

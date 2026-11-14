@@ -10,10 +10,12 @@ import {
   Thermometer,
   type LucideIcon,
 } from "lucide-react";
-import { useMemo, useState, type ComponentType, type SVGProps } from "react";
+import { useEffect, useMemo, useState, type ComponentType, type SVGProps } from "react";
 
 import robot from "@/assets/dashboard/ai-assistant-robot.png.asset.json";
 import { useOnboarding } from "@/components/onboarding/onboarding-store";
+import { authApi } from "@/lib/auth-api";
+import { firstName } from "@/components/dashboard/health";
 import { cn } from "@/lib/utils";
 
 import { AvatarFigure, AvatarPortrait } from "./AvatarArt";
@@ -59,7 +61,30 @@ export function DashboardOverview() {
 
 function useGreeting() {
   const { data } = useOnboarding();
-  return { greeting: greetingFor(new Date().getHours()), name: displayName(data) };
+  // The authenticated account is the source of truth for the name; the
+  // local onboarding store only fills the gap while offline or signed out.
+  const [accountName, setAccountName] = useState<string | null>(null);
+  useEffect(() => {
+    if (!authApi.getSession()) return;
+    let alive = true;
+    authApi
+      .me()
+      .then((user) => {
+        if (!alive) return;
+        const first = firstName(user.fullName);
+        setAccountName(first ?? user.fullName.trim() ?? null);
+      })
+      .catch(() => {
+        /* offline or expired: keep the local fallback */
+      });
+    return () => {
+      alive = false;
+    };
+  }, []);
+  return {
+    greeting: greetingFor(new Date().getHours()),
+    name: accountName ?? displayName(data),
+  };
 }
 
 function Greeting() {
