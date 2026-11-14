@@ -183,3 +183,11 @@ export const authApi = {
 
   getSession: loadSession,
 };
+
+// Development convenience only: lets you drive auth from the browser console
+// during preview testing, e.g. `await __astraAuth.me()` or `__astraAuth.logout()`.
+// Never exposed in production builds.
+const env = (import.meta as { env?: Record<string, string | boolean | undefined> }).env;
+if (env?.["DEV"] === true && typeof window !== "undefined") {
+  (window as unknown as Record<string, unknown>)["__astraAuth"] = authApi;
+}
