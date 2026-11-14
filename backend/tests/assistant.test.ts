@@ -1,5 +1,6 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import request from "supertest";
+import { presentReply } from "../src/assistant/astra";
 import { app, newUser, setupDb, syncUser, teardownDb, wipe } from "./helpers";
 
 beforeAll(async () => {
@@ -47,6 +48,12 @@ async function userWithData() {
 }
 
 describe("AI Assistant — auth & status", () => {
+  it("tidies markdown/LaTeX markup for plain-text bubbles", () => {
+    expect(presentReply("Your **SpO₂** is fine ($\\text{SpO}_2$ = 96%).\n* tip")).toBe(
+      "Your SpO₂ is fine (SpO_2 = 96%).\n• tip",
+    );
+  });
+
   it("requires a signed-in session", async () => {
     const res = await request(app).post("/api/assistant/messages").send({ message: "hi" });
     expect(res.status).toBe(401);
@@ -58,7 +65,11 @@ describe("AI Assistant — auth & status", () => {
       .get("/api/assistant/status")
       .set("authorization", `Bearer ${user.accessToken}`)
       .expect(200);
-    expect(res.body).toMatchObject({ configured: true, provider: "google-gemini", model: "gemini-3.5-flash-lite" });
+    expect(res.body).toMatchObject({
+      configured: true,
+      provider: "google-gemini",
+      model: "gemini-3.5-flash-lite",
+    });
     expect(JSON.stringify(res.body)).not.toContain("test-key");
   });
 });
@@ -85,7 +96,8 @@ describe("POST /api/assistant/messages", () => {
     const content = JSON.stringify(last.body);
     const body = last.body as { contents: { role: string; parts: { text?: string }[] }[] };
     const userContent = body.contents.at(-1)!.parts[0]!.text ?? "";
-    expect(content).toContain("You are ASTRA, an intelligent AI health assistant");
+    expect(content).toContain("You are ASTRA, a friendly and intelligent AI Health Assistant");
+    expect(content).toContain("Always respond in the language used by the astronaut.");
     expect(userContent).toContain("AST-AST1");
     expect(userContent).toContain('"heart_rate": 75');
     expect(userContent).toContain("How is my heart doing today?");
@@ -122,16 +134,21 @@ describe("POST /api/assistant/messages", () => {
       .set("authorization", `Bearer ${user.accessToken}`)
       .send({ message: "What were my vitals yesterday?" })
       .expect(201);
-    const uc = (calls[0]!.body as { contents: { parts: { text?: string }[] }[] }).contents.at(-1)!.parts[0]!.text ?? "";
+    const uc =
+      (calls[0]!.body as { contents: { parts: { text?: string }[] }[] }).contents.at(-1)!.parts[0]!
+        .text ?? "";
     expect(uc).toContain("No health data available for this astronaut.");
     expect(res.body.reply.metrics).toEqual([]);
     expect(res.body.reply.dataAsOf).toBeNull();
   });
 
   it("persists messages and degrades honestly when Gemini is unreachable", async () => {
-    vi.stubGlobal("fetch", vi.fn(async () => {
-      throw new Error("network down");
-    }));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => {
+        throw new Error("network down");
+      }),
+    );
     const user = await userWithData();
     const res = await request(app)
       .post("/api/assistant/messages")
