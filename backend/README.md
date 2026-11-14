@@ -100,3 +100,28 @@ cd backend && bunx vitest run
 # summaries merge rules, analytics honesty, AI 503/empty states, documents,
 # dataset import + strict simulated/personal separation, user isolation.
 ```
+
+## AI Assistant (integrated standalone chatbot)
+
+The user's standalone `ASTRA_Health_Chatbot` (FastAPI + Gemini) now runs
+inside this backend, keeping its provider, model, system prompt, analyzer
+rules and fallback wording. Migration `007_assistant.sql` adds
+`assistant_conversations` + `assistant_messages` (owner-scoped history).
+
+| Route | Notes |
+| --- | --- |
+| `POST /api/assistant/messages` | `{conversationId?, message}` → persists the turn, loads up to 20 history turns, injects ONLY the caller's real DB data (profile, targets, latest/previous readings, 7-day averages, alert evaluations), calls Gemini (`gemini-3.5-flash-lite`, temp 0.3), stores the reply. Falls back to the original honest "Sorry, ASTRA is temporarily unavailable." with a `degraded` reason when the AI service fails — messages are still saved. |
+| `GET /api/assistant/conversations` · `GET /api/assistant/conversations/:id/messages` | history for the caller; foreign ids are 404. |
+| `GET /api/assistant/status` | `configured` flag (never exposes the key). |
+
+Configuration (gitignored `.env` only):
+
+```
+GEMINI_API_KEY=...              # from the standalone project's .env
+GEMINI_MODEL=gemini-3.5-flash-lite   # unchanged from the original bot
+```
+
+The frontend (`AssistantView`) keeps its exact design: it calls these
+endpoints when signed in (badge "Connected"), loads/restores conversation
+history, and gracefully reverts to the clearly-labelled offline demo
+responses (badge "Demo Mode") when signed out or unreachable.

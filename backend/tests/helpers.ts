@@ -19,10 +19,12 @@ export async function teardownDb() {
 
 /** Order matters: cascade covers sessions, astronauts and every fact table. */
 export async function wipe() {
-  await client.query("TRUNCATE users, missions CASCADE");
+  await client.query("TRUNCATE users, missions, assistant_conversations CASCADE");
 }
 
-let seq = 0;
+// Random prefix: parallel vitest workers load this module independently
+// against the same database; counters alone would collide.
+let seq = Math.floor(Math.random() * 100000);
 /** Registers a fresh account and returns it plus an Authorization header. */
 export async function newUser(overrides: Partial<Record<"fullName" | "email" | "astronautId" | "password", string>> = {}) {
   seq += 1;
@@ -35,7 +37,11 @@ export async function newUser(overrides: Partial<Record<"fullName" | "email" | "
     confirmPassword: password,
     ...overrides,
   };
-  const res = await request(app).post("/api/auth/register").send(body).expect(201);
+  const res = await request(app).post("/api/auth/register").send(body);
+  if (res.status !== 201) {
+    console.log("REG_FAIL", res.status, res.text, "for", JSON.stringify(body));
+    throw new Error(`register expected 201, got ${res.status}`);
+  }
   return {
     ...body,
     accessToken: res.body.accessToken as string,

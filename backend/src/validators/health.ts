@@ -16,7 +16,7 @@ const optNum = (min: number, max: number) =>
       (v) => (v === "" || v === null || v === undefined ? null : Number(v)),
       z.number().nullish(),
     )
-    .refine((n) => n === null || (Number.isFinite(n) && n >= min && n <= max), {
+    .refine((n) => n == null || (Number.isFinite(n) && n >= min && n <= max), {
       message: `Must be between ${min} and ${max}`,
     })
     .nullish();

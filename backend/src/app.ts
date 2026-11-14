@@ -15,7 +15,7 @@ import {
   missionsRouter,
 } from "./routes/analytics";
 import { datasetRouter } from "./routes/dataset";
-
+import { assistantRouter } from "./routes/assistant";
 export function createApp() {
   const app = express();
   app.disable("x-powered-by");
@@ -59,9 +59,10 @@ export function createApp() {
   }
 
   app.get("/api/health", (_req, res) =>
-    res.json({ status: "ok", service: "astra-health", modules: ["auth", "profile", "vitals", "heart", "summaries", "analytics", "ai", "documents", "missions", "dataset"] }),
+    res.json({ status: "ok", service: "astra-health", modules: ["auth", "profile", "vitals", "heart", "summaries", "analytics", "ai", "assistant", "documents", "missions", "dataset"] }),
   );
   app.use("/api/auth", authRouter);
+  app.use("/api/assistant", assistantRouter);
   app.use("/api/onboarding", onboardingRouter);
   app.use("/api/vitals", vitalsRouter);
   app.use("/api/heart", heartRouter);
