@@ -125,3 +125,19 @@ The frontend (`AssistantView`) keeps its exact design: it calls these
 endpoints when signed in (badge "Connected"), loads/restores conversation
 history, and gracefully reverts to the clearly-labelled offline demo
 responses (badge "Demo Mode") when signed out or unreachable.
+
+## Knowledge & cited standards
+
+`GET /api/knowledge/standards` (+ `/standards/:metric`, `/summary`) serve the
+physiological ranges the platform interprets values against, each carrying
+its published source. The registry lives in `src/knowledge/standards.ts`
+and was compiled from the official Space Apps 2026 challenge resources,
+their NASA HRP links, NASA-STD-3001 Rev C requirements, and recognized
+clinical guidelines (AHA/ACC, BTS, NICE/NHS, ADA, CDC/AASM, WHO, IOF,
+NASEM). Public reference data — no PHI, cacheable.
+
+The AI Assistant injects the standards **for metrics a user actually has**
+into Gemini's context (`reference_standards`), so ASTRA explains readings
+against cited ranges instead of inventing norms. The per-user alert engine
+and the chatbot analyzer rules remain exactly as before — the registry is
+framing, not diagnosis, and never overrides personal thresholds.

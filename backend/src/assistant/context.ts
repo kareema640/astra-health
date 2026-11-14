@@ -1,4 +1,5 @@
 import { query, queryOne } from "../db";
+import { guidelineSummaryForPrompt } from "../knowledge/standards";
 
 /**
  * Port of the standalone chatbot's app/health.py. Where the original read
@@ -73,6 +74,13 @@ export interface AstraHealthContext {
   };
   /** Data categories with no real rows for this user. */
   unavailable: string[];
+  /**
+   * Cited reference ranges (AHA/BTS/NICE/CDC/WHO/IOF/NASEM + NASA-STD-3001)
+   * for the metrics this user actually has. Framing data, not measurements:
+   * lets ASTRA explain values against published norms instead of inventing
+   * them. Full citations live behind GET /api/knowledge/standards.
+   */
+  reference_standards: Record<string, string>;
   /** True when at least one real measurement exists anywhere. */
   hasData: boolean;
 }
@@ -84,28 +92,39 @@ export async function buildHealthContext(
   astronautId: string,
   designator: string,
 ): Promise<AstraHealthContext> {
-  const [latest, prev, avgs, profileRow, sleepRow, muscleRow, neuroRow, actRow, alertRow, missionRow, days] =
-    await Promise.all([
-      queryOne<Record<string, unknown>>(
-        `SELECT ts, heart_rate_bpm, hrv_rmssd_ms, spo2_pct, systolic_bp_mmhg, diastolic_bp_mmhg,
+  const [
+    latest,
+    prev,
+    avgs,
+    profileRow,
+    sleepRow,
+    muscleRow,
+    neuroRow,
+    actRow,
+    alertRow,
+    missionRow,
+    days,
+  ] = await Promise.all([
+    queryOne<Record<string, unknown>>(
+      `SELECT ts, heart_rate_bpm, hrv_rmssd_ms, spo2_pct, systolic_bp_mmhg, diastolic_bp_mmhg,
                 body_temperature_c, respiratory_rate_brmin
          FROM vital_observations
          WHERE astronaut_id = $1 AND is_synthetic = false AND source IN ('manual','sensor')
            AND COALESCE(heart_rate_bpm, spo2_pct, systolic_bp_mmhg, diastolic_bp_mmhg,
                         body_temperature_c, respiratory_rate_brmin, hrv_rmssd_ms) IS NOT NULL
          ORDER BY ts DESC LIMIT 1`,
-        [astronautId],
-      ),
-      queryOne<Record<string, unknown>>(
-        `SELECT ts, heart_rate_bpm, spo2_pct, systolic_bp_mmhg, diastolic_bp_mmhg,
+      [astronautId],
+    ),
+    queryOne<Record<string, unknown>>(
+      `SELECT ts, heart_rate_bpm, spo2_pct, systolic_bp_mmhg, diastolic_bp_mmhg,
                 body_temperature_c, respiratory_rate_brmin
          FROM vital_observations
          WHERE astronaut_id = $1 AND is_synthetic = false AND source IN ('manual','sensor')
          ORDER BY ts DESC OFFSET 1 LIMIT 1`,
-        [astronautId],
-      ),
-      queryOne<Record<string, unknown>>(
-        `SELECT count(*)::int AS rows,
+      [astronautId],
+    ),
+    queryOne<Record<string, unknown>>(
+      `SELECT count(*)::int AS rows,
                 round(avg(heart_rate_bpm)::numeric, 1) AS hr,
                 round(avg(spo2_pct)::numeric, 1) AS spo2,
                 round(avg(body_temperature_c)::numeric, 1) AS temp,
@@ -113,61 +132,61 @@ export async function buildHealthContext(
          FROM vital_observations
          WHERE astronaut_id = $1 AND is_synthetic = false AND source IN ('manual','sensor')
            AND ts >= now() - interval '7 days'`,
-        [astronautId],
-      ),
-      queryOne<Record<string, unknown>>(
-        `SELECT p.age, p.sex, p.height, p.weight, hr.resting_hr, hr.alert_above, hr.alert_below,
+      [astronautId],
+    ),
+    queryOne<Record<string, unknown>>(
+      `SELECT p.age, p.sex, p.height, p.weight, hr.resting_hr, hr.alert_above, hr.alert_below,
                 hr.sleep_target, hr.hydration, hr.conditions, u.full_name
          FROM astronaut_profiles p
          LEFT JOIN onboarding_heart_recovery hr ON hr.astronaut_id = p.astronaut_id
          LEFT JOIN astronauts a ON a.id = p.astronaut_id
          LEFT JOIN users u ON u.id = a.user_id
          WHERE p.astronaut_id = $1`,
-        [astronautId],
-      ),
-      queryOne<Record<string, unknown>>(
-        `SELECT total_duration_hr, quality_score FROM sleep_summaries
+      [astronautId],
+    ),
+    queryOne<Record<string, unknown>>(
+      `SELECT total_duration_hr, quality_score FROM sleep_summaries
          WHERE astronaut_id = $1 AND is_synthetic = false
          ORDER BY day DESC LIMIT 1`,
-        [astronautId],
-      ),
-      queryOne<Record<string, unknown>>(
-        `SELECT grip_strength_kg FROM muscle_bone_summaries
+      [astronautId],
+    ),
+    queryOne<Record<string, unknown>>(
+      `SELECT grip_strength_kg FROM muscle_bone_summaries
          WHERE astronaut_id = $1 AND is_synthetic = false
          ORDER BY day DESC LIMIT 1`,
-        [astronautId],
-      ),
-      queryOne<Record<string, unknown>>(
-        `SELECT mood_score, stress_score, fatigue_score, reaction_time_ms
+      [astronautId],
+    ),
+    queryOne<Record<string, unknown>>(
+      `SELECT mood_score, stress_score, fatigue_score, reaction_time_ms
          FROM neuro_behavioral_summaries
          WHERE astronaut_id = $1 AND is_synthetic = false
          ORDER BY day DESC LIMIT 1`,
-        [astronautId],
-      ),
-      queryOne<Record<string, unknown>>(
-        `SELECT COALESCE(sum(active_minutes), 0)::numeric AS minutes FROM activity_observations
+      [astronautId],
+    ),
+    queryOne<Record<string, unknown>>(
+      `SELECT COALESCE(sum(active_minutes), 0)::numeric AS minutes FROM activity_observations
          WHERE astronaut_id = $1 AND is_synthetic = false AND ts >= now() - interval '1 day'`,
-        [astronautId],
-      ),
-      queryOne<{ c: number }>(
-        `SELECT count(*)::int AS c FROM alert_evaluations
+      [astronautId],
+    ),
+    queryOne<{ c: number }>(
+      `SELECT count(*)::int AS c FROM alert_evaluations
          WHERE astronaut_id = $1 AND triggered = true AND evaluated_at >= now() - interval '7 days'`,
-        [astronautId],
-      ),
-      queryOne<{ start: string; end: string } & Record<string, unknown>>(
-        `SELECT m.start_date::text AS start, m.end_date::text AS end
+      [astronautId],
+    ),
+    queryOne<{ start: string; end: string } & Record<string, unknown>>(
+      `SELECT m.start_date::text AS start, m.end_date::text AS end
          FROM astronauts a JOIN missions m ON m.id = a.mission_id
          WHERE a.id = $1`,
-        [astronautId],
-      ),
-      queryOne<Record<string, number>>(
-        `SELECT
+      [astronautId],
+    ),
+    queryOne<Record<string, number>>(
+      `SELECT
            (SELECT count(*) FROM sleep_summaries       WHERE astronaut_id=$1 AND is_synthetic=false)::int AS sleep,
            (SELECT count(*) FROM neuro_behavioral_summaries WHERE astronaut_id=$1 AND is_synthetic=false)::int AS neuro,
            (SELECT count(*) FROM muscle_bone_summaries  WHERE astronaut_id=$1 AND is_synthetic=false)::int AS muscle`,
-        [astronautId],
-      ),
-    ]);
+      [astronautId],
+    ),
+  ]);
 
   const unavailable: string[] = [];
   const req = (key: string, present: boolean) => {
@@ -275,17 +294,43 @@ export async function buildHealthContext(
       triggered_alerts_7d: alertRow?.c ?? 0,
     },
     unavailable,
+    reference_standards: (() => {
+      const all = guidelineSummaryForPrompt();
+      // Only standards for data this user actually has — no unused noise.
+      const present: Record<string, boolean> = {
+        heart_rate: hr !== null,
+        spo2: spo2 !== null,
+        blood_pressure: sys !== null || dia !== null,
+        body_temperature: temp !== null,
+        respiratory_rate: rr !== null,
+        sleep_hours: sleepHours !== null,
+        activity_fitness: n(actRow?.["minutes"]) !== null,
+        muscle_strength: n(muscleRow?.["grip_strength_kg"]) !== null,
+        hydration: (profileRow?.["hydration"] as string | null) !== null,
+        blood_glucose: false, // not collected by ASTRA today
+      };
+      const out: Record<string, string> = {};
+      for (const [key, has] of Object.entries(present)) {
+        if (has && all[key]) out[key] = all[key];
+      }
+      return out;
+    })(),
     hasData,
   };
 }
 
 /** UI chips for the assistant bubble: only metrics that were actually measured. */
-export function buildUIMetrics(c: AstraHealthContext): { emoji: string; value: string; label: string }[] {
+export function buildUIMetrics(
+  c: AstraHealthContext,
+): { emoji: string; value: string; label: string }[] {
   const f = (v: number): string => String(Number(v.toFixed(1)));
   const out: { emoji: string; value: string; label: string }[] = [];
-  if (c.heart_rate !== null) out.push({ emoji: "❤️", value: `${f(c.heart_rate)} bpm`, label: "Heart Rate" });
+  if (c.heart_rate !== null)
+    out.push({ emoji: "❤️", value: `${f(c.heart_rate)} bpm`, label: "Heart Rate" });
   if (c.spo2 !== null) out.push({ emoji: "💧", value: `${f(c.spo2)}%`, label: "SpO₂" });
-  if (c.body_temperature !== null) out.push({ emoji: "🌡️", value: `${f(c.body_temperature)}°C`, label: "Body Temp" });
-  if (c.sleep_hours !== null) out.push({ emoji: "🛌", value: `${f(c.sleep_hours)} h`, label: "Sleep" });
+  if (c.body_temperature !== null)
+    out.push({ emoji: "🌡️", value: `${f(c.body_temperature)}°C`, label: "Body Temp" });
+  if (c.sleep_hours !== null)
+    out.push({ emoji: "🛌", value: `${f(c.sleep_hours)} h`, label: "Sleep" });
   return out.slice(0, 4);
 }
