@@ -4,14 +4,38 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
 
 import type { HeartCondition, HeightUnit, WeightUnit } from "./logic";
+import { fetchOnboardingSnapshot, isSignedIn, syncOnboarding } from "@/lib/health-api";
 
 /** How the user left a health-profile step: Continue marks it done, Skip marks it skipped. */
 export type StepStatus = "done" | "skipped";
+
+/**
+ * True when saved storage contains at least one real answer. The persistence
+ * effect rewrites empty defaults, so mere presence of the key means nothing —
+ * content does. Used to decide whether a server-side restore is appropriate.
+ */
+function hasMeaningfulContent(raw: string | null): boolean {
+  if (!raw) return false;
+  try {
+    const p = JSON.parse(raw) as Partial<OnboardingData>;
+    return (
+      Object.keys(p.progress ?? {}).length > 0 ||
+      Boolean(p.account?.astronautId) ||
+      Boolean(p.account?.email) ||
+      Boolean(p.basic?.age) ||
+      Boolean(p.vitals?.systolic) ||
+      Boolean(p.avatar?.callsign)
+    );
+  } catch {
+    return false;
+  }
+}
 
 export interface OnboardingData {
   /** Collected on Sign Up. Passwords are never stored. */
@@ -167,6 +191,8 @@ function readSaved(): string | null {
 export function OnboardingProvider({ children }: { children: ReactNode }) {
   const [data, setData] = useState<OnboardingData>(DEFAULT_ONBOARDING);
   const [hydrated, setHydrated] = useState(false);
+  // Set when this device already holds saved answers (then no server restore).
+  const localHadData = useRef(false);
 
   useEffect(() => {
     try {
@@ -175,6 +201,7 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
         OnboardingData["avatar"]["character"] | null;
       const savedUserRaw = window.localStorage.getItem(ASTRA_USER_STORAGE_KEY);
       const savedUser = savedUserRaw ? (JSON.parse(savedUserRaw) as AstraUserRecord) : null;
+      if (hasMeaningfulContent(raw)) localHadData.current = true;
 
       if (raw) {
         const parsed = mergeSaved(JSON.parse(raw) as Partial<OnboardingData>);
@@ -241,6 +268,39 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
     } catch {
       // Storage can be unavailable (private mode); answers still live in memory.
     }
+  }, [data, hydrated]);
+
+  // Cross-device continuity: on a fresh browser with a live session, restore
+  // the server-side profile once. Local answers always win when they exist.
+  useEffect(() => {
+    if (!hydrated || localHadData.current || !isSignedIn()) return;
+    localHadData.current = true;
+    void fetchOnboardingSnapshot()
+      .then((remote) => {
+        if (remote.hasData && remote.snapshot) {
+          setData(mergeSaved(remote.snapshot as Partial<OnboardingData>));
+        }
+      })
+      .catch(() => undefined);
+  }, [hydrated]);
+
+  // Server mirror: while signed in, debounced idempotent sync of the answers
+  // to the backend profile API. Fire-and-forget: the app never blocks on it.
+  const lastSynced = useRef("");
+  useEffect(() => {
+    if (!hydrated || !isSignedIn()) return;
+    const meaningful =
+      Object.keys(data.progress).length > 0 ||
+      data.account.astronautId !== "" ||
+      data.avatar.callsign !== "";
+    if (!meaningful) return;
+    const payload = JSON.stringify(data);
+    if (payload === lastSynced.current) return;
+    const timer = window.setTimeout(() => {
+      lastSynced.current = payload;
+      void syncOnboarding(data).catch(() => undefined);
+    }, 800);
+    return () => window.clearTimeout(timer);
   }, [data, hydrated]);
 
   const update = useCallback<OnboardingContextValue["update"]>((section, patch) => {

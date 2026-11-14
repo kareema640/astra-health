@@ -4,6 +4,17 @@ import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import { env, isTest } from "./env";
 import { authRouter } from "./routes-auth";
+import { onboardingRouter } from "./routes/onboarding";
+import { vitalsRouter } from "./routes/vitals";
+import { heartRouter } from "./routes/heart";
+import { summariesRouter } from "./routes/summaries";
+import {
+  aiRouter,
+  analyticsRouter,
+  documentsRouter,
+  missionsRouter,
+} from "./routes/analytics";
+import { datasetRouter } from "./routes/dataset";
 
 export function createApp() {
   const app = express();
@@ -29,22 +40,56 @@ export function createApp() {
       "/api/auth",
       rateLimit({
         windowMs: 15 * 60 * 1000,
-        limit: { standardHeaders: true, legacyHeaders: false },
+        standardHeaders: true,
+        legacyHeaders: false,
         // Per-IP budget: plenty for humans, painful for credential stuffing.
         max: env.NODE_ENV === "production" ? 20 : 100,
       }),
     );
+    // Generous for real use, tight enough to contain abuse of write endpoints.
+    app.use(
+      "/api",
+      rateLimit({
+        windowMs: 60_000,
+        standardHeaders: true,
+        legacyHeaders: false,
+        max: env.NODE_ENV === "production" ? 300 : 1000,
+      }),
+    );
   }
 
-  app.get("/api/health", (_req, res) => res.json({ status: "ok", service: "astra-health-auth" }));
+  app.get("/api/health", (_req, res) =>
+    res.json({ status: "ok", service: "astra-health", modules: ["auth", "profile", "vitals", "heart", "summaries", "analytics", "ai", "documents", "missions", "dataset"] }),
+  );
   app.use("/api/auth", authRouter);
+  app.use("/api/onboarding", onboardingRouter);
+  app.use("/api/vitals", vitalsRouter);
+  app.use("/api/heart", heartRouter);
+  app.use("/api/summaries", summariesRouter);
+  app.use("/api/analytics", analyticsRouter);
+  app.use("/api/ai", aiRouter);
+  app.use("/api/documents", documentsRouter);
+  app.use("/api/missions", missionsRouter);
+  app.use("/api/dataset", datasetRouter);
 
   app.use((_req, res) => res.status(404).json({ error: { code: "NOT_FOUND", message: "Unknown endpoint" } }));
 
   // Central error handler: consistent shape, no stack traces to clients.
   app.use((err: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
     if (!res.headersSent) {
-      console.error("[api]", err);
+      const pg = err as { code?: string };
+      // Integrity violations from direct API misuse: map to 400/409, log
+      // without any values (privacy rule: no PHI in logs).
+      if (pg.code === "23514") {
+        return res.status(400).json({ error: { code: "CONSTRAINT", message: "Values violate data constraints" } });
+      }
+      if (pg.code === "23503") {
+        return res.status(409).json({ error: { code: "REFERENCE", message: "Related record is missing" } });
+      }
+      if (pg.code === "22P02") {
+        return res.status(400).json({ error: { code: "VALIDATION", message: "Malformed identifier" } });
+      }
+      console.error("[api]", pg.code ?? err);
       res.status(500).json({ error: { code: "INTERNAL", message: "Something went wrong. Try again." } });
     }
   });

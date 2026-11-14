@@ -9,7 +9,7 @@ export interface AccessClaims {
 
 export function signAccessToken(claims: AccessClaims): string {
   return jwt.sign({ ...claims }, env.JWT_SECRET, {
-    expiresIn: env.ACCESS_TOKEN_TTL,
+    expiresIn: env.ACCESS_TOKEN_TTL as jwt.SignOptions["expiresIn"],
     issuer: "astra-health-api",
   });
 }
