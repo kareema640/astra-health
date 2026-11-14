@@ -14,8 +14,6 @@ import { useEffect, useMemo, useState, type ComponentType, type SVGProps } from 
 
 import robot from "@/assets/dashboard/ai-assistant-robot.png.asset.json";
 import { useOnboarding } from "@/components/onboarding/onboarding-store";
-import { authApi } from "@/lib/auth-api";
-import { firstName } from "@/components/dashboard/health";
 import { cn } from "@/lib/utils";
 
 import { AvatarFigure, AvatarPortrait } from "./AvatarArt";
@@ -33,6 +31,7 @@ import {
 } from "./health";
 import { LungsIcon, RunnerIcon } from "./icons";
 import { CardHeading } from "./ui";
+import { useAccountName } from "./use-account-name";
 
 /** Main dashboard: responsive astronaut greeting & avatar on the left, health overview grid on the right. */
 export function DashboardOverview() {
@@ -63,27 +62,10 @@ function useGreeting() {
   const { data } = useOnboarding();
   // The authenticated account is the source of truth for the name; the
   // local onboarding store only fills the gap while offline or signed out.
-  const [accountName, setAccountName] = useState<string | null>(null);
-  useEffect(() => {
-    if (!authApi.getSession()) return;
-    let alive = true;
-    authApi
-      .me()
-      .then((user) => {
-        if (!alive) return;
-        const first = firstName(user.fullName);
-        setAccountName(first ?? user.fullName.trim() ?? null);
-      })
-      .catch(() => {
-        /* offline or expired: keep the local fallback */
-      });
-    return () => {
-      alive = false;
-    };
-  }, []);
+  const { account } = useAccountName();
   return {
     greeting: greetingFor(new Date().getHours()),
-    name: accountName ?? displayName(data),
+    name: account?.first ?? displayName(data),
   };
 }
 

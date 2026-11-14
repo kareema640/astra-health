@@ -209,7 +209,7 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
           parsed.avatar = { ...parsed.avatar, character: savedAvatar };
         }
         if (savedUser) {
-          if (!parsed.account.fullName && savedUser.name) {
+          if (!parsed.account.fullName && savedUser.name && savedUser.name !== "Astronaut") {
             parsed.account = { ...parsed.account, fullName: savedUser.name };
           }
           if (!parsed.account.joinDate && savedUser.joinDate) {
@@ -232,7 +232,10 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
           ...prev,
           account: {
             ...prev.account,
-            fullName: savedUser?.name ?? prev.account.fullName,
+            fullName:
+              savedUser?.name && savedUser.name !== "Astronaut"
+                ? savedUser.name
+                : prev.account.fullName,
             joinDate: savedUser?.joinDate ?? prev.account.joinDate,
           },
           avatar: {
@@ -259,7 +262,7 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
       window.localStorage.setItem(AVATAR_STORAGE_KEY, data.avatar.character);
       const astraUser: AstraUserRecord = {
-        name: data.account.fullName.trim() || data.avatar.callsign.trim() || "Sarah",
+        name: data.account.fullName.trim() || data.avatar.callsign.trim(),
         avatarId: data.avatar.character,
         joinDate: data.account.joinDate?.trim() || "Nov 11, 2026",
         customPhoto: data.avatar.customPhoto || "",

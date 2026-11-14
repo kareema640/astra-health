@@ -22,6 +22,7 @@ import {
   RangeBar,
 } from "@/components/dashboard/ui";
 import { useOnboarding } from "@/components/onboarding/onboarding-store";
+import { useAccountName } from "@/components/dashboard/use-account-name";
 import { stepHead } from "@/components/onboarding/steps";
 import { computeHealthScore } from "@/data/profileData";
 
@@ -35,6 +36,8 @@ export const Route = createFileRoute("/dashboard/analytics")({
 });
 
 function AnalyticsPage() {
+  // Registered account fills the Crew Member row when setup was skipped.
+  const { account: signedIn } = useAccountName();
   const { data } = useOnboarding();
   const { account, basic, vitals, heart, muscle } = data;
   const completeness = profileCompleteness(data);
@@ -204,8 +207,14 @@ function AnalyticsPage() {
         <DashCard className="flex flex-col p-[22px] sm:p-[24px]">
           <CardHeading icon={HeartPulse} title="Astronaut Biometric Profile" />
           <div className="mt-[10px]">
-            <InfoRow label="Crew Member" value={account.fullName.trim() || "Sarah"} />
-            <InfoRow label="Astronaut ID" value={account.astronautId.trim() || "AST-042"} />
+            <InfoRow
+              label="Crew Member"
+              value={signedIn?.fullName || account.fullName.trim() || "Astronaut"}
+            />
+            <InfoRow
+              label="Astronaut ID"
+              value={account.astronautId.trim() || signedIn?.astronautId || "Not assigned"}
+            />
             <InfoRow label="Age" value={basic.age.trim() ? `${basic.age} years` : "Not entered"} />
             <InfoRow label="Sex (assigned at birth)" value={SEX_LABEL[basic.sex]} />
             <InfoRow

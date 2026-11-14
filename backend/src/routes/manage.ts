@@ -22,6 +22,68 @@ export const workoutRouter = Router();
 plannerRouter.use(requireAuth());
 workoutRouter.use(requireAuth());
 
+/**
+ * Restored originals (git 1c74181) of the default Mission Planner tasks and
+ * countermeasure sessions the site shipped with. Seeded server-side exactly
+ * once per astronaut — the claim flag makes deletion final, and users who
+ * already own rows never receive duplicates. Stored like any other record,
+ * so add/edit/delete stay entirely the user's.
+ */
+const STARTER_MISSIONS = [
+  { title: "Morning SpO₂ & Resting HR Check", timeUtc: "06:30 UTC", category: "Vital Check", status: "done" },
+  { title: "Vitamin D3 & Iron Supplementation", timeUtc: "07:15 UTC", category: "Nutrition", status: "done" },
+  { title: "ARED Strength Training Block", timeUtc: "10:00 UTC", category: "Exercise", status: "pending" },
+  { title: "EVA Suit Seal & Comms Check", timeUtc: "14:00 UTC", category: "EVA Prep", status: "pending" },
+  { title: "Evening Core Body Temp Log", timeUtc: "19:00 UTC", category: "Vital Check", status: "pending" },
+  { title: "Pre-Sleep Recovery & Hydration Wind-Down", timeUtc: "21:30 UTC", category: "Rest", status: "pending" },
+] as const;
+
+/** Original order preserved: seeded newest-needed-last so created_at DESC shows ARED first. */
+const STARTER_SESSIONS = [
+  { name: "Microgravity Core Stabilization", durationMin: 20, focus: "Core", completed: false, notes: "Postural Stability" },
+  { name: "CEVIS Ergometer Cycle", durationMin: 25, focus: "Cardio", completed: false, notes: "Endurance" },
+  { name: "T2 Treadmill Interval Run", durationMin: 30, focus: "Cardio", completed: true, notes: "Cardio / Aerobic" },
+  { name: "ARED Squats & Deadlifts", durationMin: 40, focus: "Resistance", completed: true, notes: "Lower Body / Bone" },
+] as const;
+
+export async function ensureStarterData(aid: string): Promise<void> {
+  // Atomic claim: exactly one request per astronaut ever proceeds past this.
+  const claimed = await query<{ id: string }>(
+    `UPDATE astronauts SET starter_data_seeded = true
+     WHERE id = $1 AND starter_data_seeded = false RETURNING id`,
+    [aid],
+  );
+  if (claimed.length === 0) return;
+  const [hasMissions] = await query<{ one: number }>(
+    "SELECT 1 AS one FROM planner_missions WHERE astronaut_id = $1 LIMIT 1",
+    [aid],
+  );
+  if (!hasMissions) {
+    for (const m of STARTER_MISSIONS) {
+      await query(
+        `INSERT INTO planner_missions
+           (astronaut_id, title, category, time_utc, status)
+         VALUES ($1,$2,$3,$4,$5)`,
+        [aid, m.title, m.category, m.timeUtc, m.status],
+      );
+    }
+  }
+  const [hasSessions] = await query<{ one: number }>(
+    "SELECT 1 AS one FROM workout_sessions WHERE astronaut_id = $1 LIMIT 1",
+    [aid],
+  );
+  if (!hasSessions) {
+    for (const s of STARTER_SESSIONS) {
+      await query(
+        `INSERT INTO workout_sessions
+           (astronaut_id, name, focus, duration_min, notes, completed)
+         VALUES ($1,$2,$3,$4,$5,$6)`,
+        [aid, s.name, s.focus, s.durationMin, s.notes, s.completed],
+      );
+    }
+  }
+}
+
 const MISSION_COLS = `
   id, title, description, category, time_utc AS "timeUtc",
   scheduled_day::text AS "scheduledDay", duration_min AS "durationMin",
@@ -37,6 +99,7 @@ plannerRouter.get(
   "/missions",
   h(async (req, res) => {
     const aid = await resolveAstronaut(req.user);
+    await ensureStarterData(aid);
     const items = await query<Record<string, unknown>>(
       `SELECT ${MISSION_COLS} FROM planner_missions
        WHERE astronaut_id = $1
@@ -131,6 +194,7 @@ workoutRouter.get(
   "/sessions",
   h(async (req, res) => {
     const aid = await resolveAstronaut(req.user);
+    await ensureStarterData(aid);
     const items = await query<Record<string, unknown>>(
       `SELECT ${SESSION_COLS} FROM workout_sessions
        WHERE astronaut_id = $1

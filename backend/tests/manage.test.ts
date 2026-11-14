@@ -33,6 +33,9 @@ describe("Mission Planner CRUD", () => {
   it("creates, lists, updates status and deletes user-owned missions", async () => {
     await wipe();
     const u = await newUser();
+    // First visit claims the restored starter set, like the real UI does.
+    const seeded = await request(app).get("/api/planner/missions").set(u.auth).expect(200);
+    expect(seeded.body.missions).toHaveLength(6);
     const created = await request(app)
       .post("/api/planner/missions")
       .set(u.auth)
@@ -50,7 +53,8 @@ describe("Mission Planner CRUD", () => {
       .get("/api/planner/missions")
       .set(u.auth)
       .expect(200);
-    expect(list.body.missions).toHaveLength(1);
+    // 6 restored starter tasks + the created one.
+    expect(list.body.missions).toHaveLength(7);
 
     const patched = await request(app)
       .patch(`/api/planner/missions/${m.id}`)
@@ -61,7 +65,8 @@ describe("Mission Planner CRUD", () => {
 
     await request(app).delete(`/api/planner/missions/${m.id}`).set(u.auth).expect(200);
     const after = await request(app).get("/api/planner/missions").set(u.auth);
-    expect(after.body.missions).toHaveLength(0);
+    expect(after.body.missions).toHaveLength(6);
+    expect(JSON.stringify(after.body.missions)).not.toContain("Cabin O₂");
   });
 
   it("rejects empty titles and unknown categories", async () => {
@@ -90,13 +95,13 @@ describe("Mission Planner CRUD", () => {
     const id = (res.body.mission as MissionRow).id;
 
     const bobList = await request(app).get("/api/planner/missions").set(bob.auth).expect(200);
-    expect(bobList.body.missions).toHaveLength(0);
+    expect(JSON.stringify(bobList.body.missions)).not.toContain("Alice");
     await request(app).patch(`/api/planner/missions/${id}`).set(bob.auth).send({ status: "done" }).expect(404);
     await request(app).delete(`/api/planner/missions/${id}`).set(bob.auth).expect(404);
 
-    // Still intact for Alice.
+    // Still intact for Alice (plus her starter set, shared titles excluded).
     const aliceList = await request(app).get("/api/planner/missions").set(alice.auth);
-    expect(aliceList.body.missions).toHaveLength(1);
+    expect(aliceList.body.missions.filter((m: { title: string }) => m.title === "Alice's EVA timeline")).toHaveLength(1);
   });
 });
 
@@ -133,7 +138,8 @@ describe("Activity & Exercise sessions CRUD", () => {
 
     await request(app).delete(`/api/workouts/sessions/${s.id}`).set(u.auth).expect(200);
     const after = await request(app).get("/api/workouts/sessions").set(u.auth);
-    expect(after.body.sessions).toHaveLength(0);
+    expect(after.body.sessions).toHaveLength(4); // restored starters, no re-add
+    expect(JSON.stringify(after.body.sessions)).not.toContain("T2 Treadmill Intervals");
   });
 
   it("validates duration and rejects empty updates", async () => {
@@ -165,14 +171,69 @@ describe("Activity & Exercise sessions CRUD", () => {
   it("isolates sessions between users", async () => {
     const alice = await newUser();
     const bob = await newUser();
+    await request(app).get("/api/workouts/sessions").set(bob.auth); // bob claims seed
     const res = await request(app)
       .post("/api/workouts/sessions")
       .set(alice.auth)
-      .send({ name: "ARED Squats", focus: "Resistance", durationMin: 40 })
+      .send({ name: "Alice rowing piece", focus: "Cardio", durationMin: 40 })
       .expect(201);
     const id = (res.body.session as SessionRow).id;
     const bobList = await request(app).get("/api/workouts/sessions").set(bob.auth);
-    expect(bobList.body.sessions).toHaveLength(0);
+    expect(JSON.stringify(bobList.body.sessions)).not.toContain("Alice rowing piece");
     await request(app).delete(`/api/workouts/sessions/${id}`).set(bob.auth).expect(404);
+  });
+});
+
+describe("Restored starter data (original defaults, seeded once)", () => {
+  it("gives a first-time account the exact original tasks and sessions", async () => {
+    await wipe();
+    const u = await newUser();
+    const missions = (await request(app).get("/api/planner/missions").set(u.auth).expect(200)).body
+      .missions as MissionRow[];
+    expect(missions.map((m) => m.title)).toEqual([
+      "Morning SpO₂ & Resting HR Check",
+      "Vitamin D3 & Iron Supplementation",
+      "ARED Strength Training Block",
+      "EVA Suit Seal & Comms Check",
+      "Evening Core Body Temp Log",
+      "Pre-Sleep Recovery & Hydration Wind-Down",
+    ]);
+    expect(missions[0]?.status).toBe("done");
+    expect(missions[1]?.status).toBe("done");
+    expect(missions[2]?.status).toBe("pending");
+
+    const sessions = (await request(app).get("/api/workouts/sessions").set(u.auth).expect(200)).body
+      .sessions as SessionRow[];
+    expect(sessions.map((x) => x.name)).toEqual([
+      "ARED Squats & Deadlifts",
+      "T2 Treadmill Interval Run",
+      "CEVIS Ergometer Cycle",
+      "Microgravity Core Stabilization",
+    ]);
+    expect(sessions[0]?.completed).toBe(true);
+    expect(sessions[2]?.completed).toBe(false);
+  });
+
+  it("never re-seeds after deletion and never duplicates for existing rows", async () => {
+    const u = await newUser();
+    const first = (await request(app).get("/api/planner/missions").set(u.auth)).body
+      .missions as MissionRow[];
+    for (const m of first) {
+      await request(app).delete(`/api/planner/missions/${m.id}`).set(u.auth).expect(200);
+    }
+    const after = (await request(app).get("/api/planner/missions").set(u.auth)).body
+      .missions as MissionRow[];
+    expect(after).toHaveLength(0);
+
+    // A user who owned rows before their first GET keeps exactly those.
+    const v = await newUser();
+    await request(app)
+      .post("/api/planner/missions")
+      .set(v.auth)
+      .send({ title: "Pre-existing custom plan" })
+      .expect(201);
+    const vList = (await request(app).get("/api/planner/missions").set(v.auth)).body
+      .missions as MissionRow[];
+    expect(vList.map((m) => m.title)).toEqual(["Pre-existing custom plan"]);
   });
 });
