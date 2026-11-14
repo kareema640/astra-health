@@ -64,7 +64,7 @@ authRouter.post("/register", async (req: Request, res: Response) => {
        RETURNING id, email, password_hash, full_name, astronaut_id, created_at`,
       [email.toLowerCase(), await hashPassword(password), fullName, astronautId.toUpperCase()],
     );
-    const user = rows[0];
+    const user = rows[0] as UserRow;
     const refreshToken = await createSession(user.id);
     return res.status(201).json({
       user: publicUser(user),

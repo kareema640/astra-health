@@ -3,11 +3,12 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "ASTRA HEALTH authentication API (Login / Sign Up module) — PostgreSQL + Express",
+  "description": "ASTRA HEALTH platform API — authentication, health records, analytics (PostgreSQL + Express)",
   "scripts": {
     "dev": "bun run --watch src/server.ts",
     "start": "bun run src/server.ts",
-    "migrate": "psql \"$DATABASE_URL\" -v ON_ERROR_STOP=1 -f src/db/migrations/001_auth.sql",
+    "migrate": "bun src/db/migrate.ts",
+    "import:dataset": "bun scripts/import-dataset.ts",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },
