@@ -7,6 +7,7 @@ import spaceScene from "@/assets/dashboard/dashboard-earth-scene.jpg.asset.json"
 import nasaLogo from "@/assets/nasa-logo.png.asset.json";
 import { useOnboarding } from "@/components/onboarding/onboarding-store";
 import { cn } from "@/lib/utils";
+import { authApi } from "@/lib/auth-api";
 
 import { AvatarPortrait } from "./AvatarArt";
 import { isNavActive, NAV_ITEMS, type NavItem } from "./nav";
@@ -313,6 +314,9 @@ function LogoutButton() {
   const { logout } = useOnboarding();
 
   const handleLogout = () => {
+    // Revoke the auth-backend session too (fire-and-forget: the UI behavior
+    // is unchanged — navigation happens immediately, works offline as well).
+    void authApi.logout();
     logout();
     navigate({ to: "/" });
   };

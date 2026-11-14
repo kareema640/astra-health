@@ -10,15 +10,24 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as BodyTemperatureRouteImport } from './routes/body-temperature'
 import { Route as DashboardRouteImport } from './routes/dashboard'
+import { Route as HeartRateRouteImport } from './routes/heart-rate'
+import { Route as MedicationsRouteImport } from './routes/medications'
+import { Route as MentalHealthRouteImport } from './routes/mental-health'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
+import { Route as PhysicalActivityRouteImport } from './routes/physical-activity'
+import { Route as ProfileRouteImport } from './routes/profile'
+import { Route as RespiratoryRouteImport } from './routes/respiratory'
 import { Route as SignupRouteImport } from './routes/signup'
+import { Route as SleepQualityRouteImport } from './routes/sleep-quality'
 import { Route as DashboardIndexRouteImport } from './routes/dashboard.index'
 import { Route as DashboardActivityRouteImport } from './routes/dashboard.activity'
 import { Route as DashboardAnalyticsRouteImport } from './routes/dashboard.analytics'
 import { Route as DashboardAssistantRouteImport } from './routes/dashboard.assistant'
 import { Route as DashboardMissionPlannerRouteImport } from './routes/dashboard.mission-planner'
 import { Route as DashboardNotificationsRouteImport } from './routes/dashboard.notifications'
+import { Route as DashboardOxygenMonitoringRouteImport } from './routes/dashboard.oxygen-monitoring'
 import { Route as DashboardProfileRouteImport } from './routes/dashboard.profile'
 import { Route as DashboardSleepRouteImport } from './routes/dashboard.sleep'
 import { Route as DashboardTrendsRouteImport } from './routes/dashboard.trends'
@@ -35,9 +44,29 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BodyTemperatureRoute = BodyTemperatureRouteImport.update({
+  id: '/body-temperature',
+  path: '/body-temperature',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DashboardRoute = DashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HeartRateRoute = HeartRateRouteImport.update({
+  id: '/heart-rate',
+  path: '/heart-rate',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MedicationsRoute = MedicationsRouteImport.update({
+  id: '/medications',
+  path: '/medications',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MentalHealthRoute = MentalHealthRouteImport.update({
+  id: '/mental-health',
+  path: '/mental-health',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OnboardingRoute = OnboardingRouteImport.update({
@@ -45,9 +74,29 @@ const OnboardingRoute = OnboardingRouteImport.update({
   path: '/onboarding',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PhysicalActivityRoute = PhysicalActivityRouteImport.update({
+  id: '/physical-activity',
+  path: '/physical-activity',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProfileRoute = ProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RespiratoryRoute = RespiratoryRouteImport.update({
+  id: '/respiratory',
+  path: '/respiratory',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
   path: '/signup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SleepQualityRoute = SleepQualityRouteImport.update({
+  id: '/sleep-quality',
+  path: '/sleep-quality',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DashboardIndexRoute = DashboardIndexRouteImport.update({
@@ -80,6 +129,12 @@ const DashboardNotificationsRoute = DashboardNotificationsRouteImport.update({
   path: '/notifications',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardOxygenMonitoringRoute =
+  DashboardOxygenMonitoringRouteImport.update({
+    id: '/oxygen-monitoring',
+    path: '/oxygen-monitoring',
+    getParentRoute: () => DashboardRoute,
+  } as any)
 const DashboardProfileRoute = DashboardProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
@@ -133,14 +188,23 @@ const OnboardingVitalSignsRoute = OnboardingVitalSignsRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/body-temperature': typeof BodyTemperatureRoute
   '/dashboard': typeof DashboardRouteWithChildren
+  '/heart-rate': typeof HeartRateRoute
+  '/medications': typeof MedicationsRoute
+  '/mental-health': typeof MentalHealthRoute
   '/onboarding': typeof OnboardingRouteWithChildren
+  '/physical-activity': typeof PhysicalActivityRoute
+  '/profile': typeof ProfileRoute
+  '/respiratory': typeof RespiratoryRoute
   '/signup': typeof SignupRoute
+  '/sleep-quality': typeof SleepQualityRoute
   '/dashboard/activity': typeof DashboardActivityRoute
   '/dashboard/analytics': typeof DashboardAnalyticsRoute
   '/dashboard/assistant': typeof DashboardAssistantRoute
   '/dashboard/mission-planner': typeof DashboardMissionPlannerRoute
   '/dashboard/notifications': typeof DashboardNotificationsRoute
+  '/dashboard/oxygen-monitoring': typeof DashboardOxygenMonitoringRoute
   '/dashboard/profile': typeof DashboardProfileRoute
   '/dashboard/sleep': typeof DashboardSleepRoute
   '/dashboard/trends': typeof DashboardTrendsRoute
@@ -155,12 +219,21 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/body-temperature': typeof BodyTemperatureRoute
+  '/heart-rate': typeof HeartRateRoute
+  '/medications': typeof MedicationsRoute
+  '/mental-health': typeof MentalHealthRoute
+  '/physical-activity': typeof PhysicalActivityRoute
+  '/profile': typeof ProfileRoute
+  '/respiratory': typeof RespiratoryRoute
   '/signup': typeof SignupRoute
+  '/sleep-quality': typeof SleepQualityRoute
   '/dashboard/activity': typeof DashboardActivityRoute
   '/dashboard/analytics': typeof DashboardAnalyticsRoute
   '/dashboard/assistant': typeof DashboardAssistantRoute
   '/dashboard/mission-planner': typeof DashboardMissionPlannerRoute
   '/dashboard/notifications': typeof DashboardNotificationsRoute
+  '/dashboard/oxygen-monitoring': typeof DashboardOxygenMonitoringRoute
   '/dashboard/profile': typeof DashboardProfileRoute
   '/dashboard/sleep': typeof DashboardSleepRoute
   '/dashboard/trends': typeof DashboardTrendsRoute
@@ -176,14 +249,23 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/body-temperature': typeof BodyTemperatureRoute
   '/dashboard': typeof DashboardRouteWithChildren
+  '/heart-rate': typeof HeartRateRoute
+  '/medications': typeof MedicationsRoute
+  '/mental-health': typeof MentalHealthRoute
   '/onboarding': typeof OnboardingRouteWithChildren
+  '/physical-activity': typeof PhysicalActivityRoute
+  '/profile': typeof ProfileRoute
+  '/respiratory': typeof RespiratoryRoute
   '/signup': typeof SignupRoute
+  '/sleep-quality': typeof SleepQualityRoute
   '/dashboard/activity': typeof DashboardActivityRoute
   '/dashboard/analytics': typeof DashboardAnalyticsRoute
   '/dashboard/assistant': typeof DashboardAssistantRoute
   '/dashboard/mission-planner': typeof DashboardMissionPlannerRoute
   '/dashboard/notifications': typeof DashboardNotificationsRoute
+  '/dashboard/oxygen-monitoring': typeof DashboardOxygenMonitoringRoute
   '/dashboard/profile': typeof DashboardProfileRoute
   '/dashboard/sleep': typeof DashboardSleepRoute
   '/dashboard/trends': typeof DashboardTrendsRoute
@@ -200,14 +282,23 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/body-temperature'
     | '/dashboard'
+    | '/heart-rate'
+    | '/medications'
+    | '/mental-health'
     | '/onboarding'
+    | '/physical-activity'
+    | '/profile'
+    | '/respiratory'
     | '/signup'
+    | '/sleep-quality'
     | '/dashboard/activity'
     | '/dashboard/analytics'
     | '/dashboard/assistant'
     | '/dashboard/mission-planner'
     | '/dashboard/notifications'
+    | '/dashboard/oxygen-monitoring'
     | '/dashboard/profile'
     | '/dashboard/sleep'
     | '/dashboard/trends'
@@ -222,12 +313,21 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/body-temperature'
+    | '/heart-rate'
+    | '/medications'
+    | '/mental-health'
+    | '/physical-activity'
+    | '/profile'
+    | '/respiratory'
     | '/signup'
+    | '/sleep-quality'
     | '/dashboard/activity'
     | '/dashboard/analytics'
     | '/dashboard/assistant'
     | '/dashboard/mission-planner'
     | '/dashboard/notifications'
+    | '/dashboard/oxygen-monitoring'
     | '/dashboard/profile'
     | '/dashboard/sleep'
     | '/dashboard/trends'
@@ -242,14 +342,23 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/body-temperature'
     | '/dashboard'
+    | '/heart-rate'
+    | '/medications'
+    | '/mental-health'
     | '/onboarding'
+    | '/physical-activity'
+    | '/profile'
+    | '/respiratory'
     | '/signup'
+    | '/sleep-quality'
     | '/dashboard/activity'
     | '/dashboard/analytics'
     | '/dashboard/assistant'
     | '/dashboard/mission-planner'
     | '/dashboard/notifications'
+    | '/dashboard/oxygen-monitoring'
     | '/dashboard/profile'
     | '/dashboard/sleep'
     | '/dashboard/trends'
@@ -265,9 +374,17 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  BodyTemperatureRoute: typeof BodyTemperatureRoute
   DashboardRoute: typeof DashboardRouteWithChildren
+  HeartRateRoute: typeof HeartRateRoute
+  MedicationsRoute: typeof MedicationsRoute
+  MentalHealthRoute: typeof MentalHealthRoute
   OnboardingRoute: typeof OnboardingRouteWithChildren
+  PhysicalActivityRoute: typeof PhysicalActivityRoute
+  ProfileRoute: typeof ProfileRoute
+  RespiratoryRoute: typeof RespiratoryRoute
   SignupRoute: typeof SignupRoute
+  SleepQualityRoute: typeof SleepQualityRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -279,11 +396,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/body-temperature': {
+      id: '/body-temperature'
+      path: '/body-temperature'
+      fullPath: '/body-temperature'
+      preLoaderRoute: typeof BodyTemperatureRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/dashboard': {
       id: '/dashboard'
       path: '/dashboard'
       fullPath: '/dashboard'
       preLoaderRoute: typeof DashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/heart-rate': {
+      id: '/heart-rate'
+      path: '/heart-rate'
+      fullPath: '/heart-rate'
+      preLoaderRoute: typeof HeartRateRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/medications': {
+      id: '/medications'
+      path: '/medications'
+      fullPath: '/medications'
+      preLoaderRoute: typeof MedicationsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mental-health': {
+      id: '/mental-health'
+      path: '/mental-health'
+      fullPath: '/mental-health'
+      preLoaderRoute: typeof MentalHealthRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/onboarding': {
@@ -293,11 +438,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OnboardingRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/physical-activity': {
+      id: '/physical-activity'
+      path: '/physical-activity'
+      fullPath: '/physical-activity'
+      preLoaderRoute: typeof PhysicalActivityRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/profile': {
+      id: '/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof ProfileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/respiratory': {
+      id: '/respiratory'
+      path: '/respiratory'
+      fullPath: '/respiratory'
+      preLoaderRoute: typeof RespiratoryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/signup': {
       id: '/signup'
       path: '/signup'
       fullPath: '/signup'
       preLoaderRoute: typeof SignupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sleep-quality': {
+      id: '/sleep-quality'
+      path: '/sleep-quality'
+      fullPath: '/sleep-quality'
+      preLoaderRoute: typeof SleepQualityRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dashboard/': {
@@ -340,6 +513,13 @@ declare module '@tanstack/react-router' {
       path: '/notifications'
       fullPath: '/dashboard/notifications'
       preLoaderRoute: typeof DashboardNotificationsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/oxygen-monitoring': {
+      id: '/dashboard/oxygen-monitoring'
+      path: '/oxygen-monitoring'
+      fullPath: '/dashboard/oxygen-monitoring'
+      preLoaderRoute: typeof DashboardOxygenMonitoringRouteImport
       parentRoute: typeof DashboardRoute
     }
     '/dashboard/profile': {
@@ -421,6 +601,7 @@ interface DashboardRouteChildren {
   DashboardAssistantRoute: typeof DashboardAssistantRoute
   DashboardMissionPlannerRoute: typeof DashboardMissionPlannerRoute
   DashboardNotificationsRoute: typeof DashboardNotificationsRoute
+  DashboardOxygenMonitoringRoute: typeof DashboardOxygenMonitoringRoute
   DashboardProfileRoute: typeof DashboardProfileRoute
   DashboardSleepRoute: typeof DashboardSleepRoute
   DashboardTrendsRoute: typeof DashboardTrendsRoute
@@ -434,6 +615,7 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardAssistantRoute: DashboardAssistantRoute,
   DashboardMissionPlannerRoute: DashboardMissionPlannerRoute,
   DashboardNotificationsRoute: DashboardNotificationsRoute,
+  DashboardOxygenMonitoringRoute: DashboardOxygenMonitoringRoute,
   DashboardProfileRoute: DashboardProfileRoute,
   DashboardSleepRoute: DashboardSleepRoute,
   DashboardTrendsRoute: DashboardTrendsRoute,
@@ -469,9 +651,17 @@ const OnboardingRouteWithChildren = OnboardingRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  BodyTemperatureRoute: BodyTemperatureRoute,
   DashboardRoute: DashboardRouteWithChildren,
+  HeartRateRoute: HeartRateRoute,
+  MedicationsRoute: MedicationsRoute,
+  MentalHealthRoute: MentalHealthRoute,
   OnboardingRoute: OnboardingRouteWithChildren,
+  PhysicalActivityRoute: PhysicalActivityRoute,
+  ProfileRoute: ProfileRoute,
+  RespiratoryRoute: RespiratoryRoute,
   SignupRoute: SignupRoute,
+  SleepQualityRoute: SleepQualityRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

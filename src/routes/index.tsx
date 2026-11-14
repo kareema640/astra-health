@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { ArrowRight } from "lucide-react";
-import type { FormEvent } from "react";
+import { ArrowRight, Loader2 } from "lucide-react";
+import { useState, type FormEvent } from "react";
 
 import { AuthDivider } from "@/components/auth/AuthDivider";
 import { AuthField } from "@/components/auth/AuthField";
@@ -8,6 +8,8 @@ import { AuthScene } from "@/components/auth/AuthScene";
 import { CometStreak } from "@/components/auth/CometStreak";
 import { AstronautIcon, LockIcon, PersonIcon, PersonPlusIcon } from "@/components/auth/icons";
 import { SocialLogins } from "@/components/auth/SocialLogins";
+import { ApiError, authApi } from "@/lib/auth-api";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -33,10 +35,30 @@ export const Route = createFileRoute("/")({
 
 function LoginPage() {
   const navigate = useNavigate();
-  // No account server yet: Continue opens the dashboard saved on this device.
-  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<ApiError | null>(null);
+  const fieldIssue = (name: string) => (error?.fields[name] ? "auth-field-error" : undefined);
+
+  // The backend auth API is now connected: credentials are verified server-side
+  // against PostgreSQL; on success the behavior is unchanged (open the dashboard).
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    navigate({ to: "/dashboard" });
+    if (busy) return;
+    setBusy(true);
+    setError(null);
+    const form = new FormData(e.currentTarget);
+    const text = (key: string) => String(form.get(key) ?? "").trim();
+    try {
+      await authApi.login({ astronautId: text("astronautId"), password: text("password") });
+      navigate({ to: "/dashboard" });
+    } catch (err) {
+      setError(
+        err instanceof ApiError
+          ? err
+          : new ApiError(0, "UNKNOWN", "Something went wrong. Try again."),
+      );
+      setBusy(false);
+    }
   };
 
   return (
@@ -78,7 +100,9 @@ function LoginPage() {
           </Link>
         </nav>
 
-        <form onSubmit={handleSubmit} className="contents">
+        {/* noValidate: the server is authoritative, so every rule gets the
+            designed feedback row below instead of a browser-native bubble. */}
+        <form onSubmit={handleSubmit} noValidate className="contents">
           <AuthField
             size="login"
             icon={PersonIcon}
@@ -86,7 +110,7 @@ function LoginPage() {
             name="astronautId"
             placeholder="Astronaut ID"
             autoComplete="username"
-            className="mt-[20px]"
+            className={cn("mt-[20px]", fieldIssue("astronautId"))}
           />
           <AuthField
             size="login"
@@ -96,15 +120,30 @@ function LoginPage() {
             placeholder="Password"
             autoComplete="current-password"
             reveal="eye"
-            className="mt-[14px]"
+            className={cn("mt-[14px]", fieldIssue("password"))}
           />
           <button
             type="submit"
+            disabled={busy}
+            aria-busy={busy}
             className="auth-cta mt-[18px] flex h-[56px] w-full items-center justify-center gap-[10px] rounded-full text-[20px] font-bold sm:h-[64px] sm:text-[23.5px]"
           >
             Continue
-            <ArrowRight className="size-[22px] sm:size-[25px]" strokeWidth={2.4} />
+            {busy ? (
+              <Loader2 aria-hidden className="size-[22px] animate-spin sm:size-[25px]" />
+            ) : (
+              <ArrowRight className="size-[22px] sm:size-[25px]" strokeWidth={2.4} />
+            )}
           </button>
+          {error ? (
+            <p
+              role="alert"
+              aria-live="polite"
+              className="mt-[12px] text-center text-[15px] leading-[20px] text-coral sm:text-[17px]"
+            >
+              {Object.values(error.fields)[0] ?? error.message}
+            </p>
+          ) : null}
         </form>
 
         <AuthDivider
