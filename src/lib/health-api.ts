@@ -71,6 +71,14 @@ function syncableSnapshot(data: OnboardingData) {
   return { ...rest, avatar: avatarRest };
 }
 
+/** Reused by the assistant client — one auth/refresh path for the whole app. */
+export async function apiRequest<T>(
+  path: string,
+  options?: { method?: string; body?: unknown },
+): Promise<T> {
+  return authedRequest<T>(path, options);
+}
+
 export async function syncOnboarding(data: OnboardingData): Promise<void> {
   await authedRequest("/api/onboarding/sync", { body: syncableSnapshot(data) });
 }

@@ -6,6 +6,14 @@ import robot from "@/assets/dashboard/ai-assistant-robot.png.asset.json";
 import nasaLogo from "@/assets/nasa-logo.png.asset.json";
 import { useOnboarding, type OnboardingData } from "@/components/onboarding/onboarding-store";
 import { cn } from "@/lib/utils";
+import {
+  fetchAssistantStatus,
+  fetchConversationMessages,
+  fetchConversations,
+  sendAssistantMessage,
+  type StoredMessage,
+} from "@/lib/assistant-api";
+import { isSignedIn } from "@/lib/health-api";
 
 import { AvatarPortrait } from "./AvatarArt";
 import { firstName, HYDRATION_LABEL, SLEEP_INFO } from "./health";
@@ -26,6 +34,7 @@ interface ChatMessage {
   metrics?: ChatMetric[];
   closing?: string;
   isDemoNote?: boolean;
+  footnote?: string;
 }
 
 const INITIAL_MESSAGES: ChatMessage[] = [
@@ -129,6 +138,27 @@ function buildDemoReply(prompt: string, data: OnboardingData): ChatMessage {
   };
 }
 
+/** Opening assistant message when connected to the real backend (no invented values). */
+function liveWelcomeMessages(name: string): ChatMessage[] {
+  return [
+    {
+      id: "welcome",
+      role: "assistant",
+      text: `Hello ${name}! 👋`,
+      subtitle:
+        "I'm ASTRA, connected to your Astra Health records. Ask me about your measurements, trends, or how to understand them.",
+    },
+  ];
+}
+
+function toChatMessage(m: StoredMessage): ChatMessage {
+  const msg: ChatMessage = { id: `db-${m.id}`, role: m.role, text: m.content };
+  if (m.role === "assistant" && m.degraded) {
+    msg.footnote = "ASTRA could not reach the AI service when this reply was generated.";
+  }
+  return msg;
+}
+
 /** Four-point glowing AI sparkle icon matching the futuristic assistant design. */
 function AiSparkleIcon({ className }: { className?: string }) {
   return (
@@ -153,7 +183,10 @@ function AiSparkleIcon({ className }: { className?: string }) {
 
 /**
  * Interactive AI Assistant workspace inside the unified Astra Health DashboardShell.
- * Uses demo responses only — does not invent real medical analysis.
+ * When signed in, messages are answered by the integrated ASTRA assistant
+ * (backend Gemini + this user's real database records, conversation history
+ * persisted). Signed out or offline, it falls back to the original clearly
+ * labelled demo responses. It never invents real medical analysis.
  */
 export function AssistantView() {
   const { data } = useOnboarding();
@@ -161,12 +194,16 @@ export function AssistantView() {
   const [messages, setMessages] = useState<ChatMessage[]>(INITIAL_MESSAGES);
   const [draft, setDraft] = useState("");
   const [isReplying, setIsReplying] = useState(false);
+  // True once the backend assistant is reachable for this signed-in account.
+  const [live, setLive] = useState(false);
   const scrollEndRef = useRef<HTMLDivElement>(null);
   const replyTimerRef = useRef<number | null>(null);
+  const conversationIdRef = useRef<string | null>(null);
+  const initialCountRef = useRef(INITIAL_MESSAGES.length);
 
   const userName = firstName(data.account.fullName) ?? (data.avatar.callsign.trim() || "Sarah");
   const badgeCount = unread > 0 ? unread : 3;
-  const isModified = messages.length > INITIAL_MESSAGES.length;
+  const isModified = messages.length > initialCountRef.current;
 
   useEffect(() => {
     scrollEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
@@ -178,6 +215,41 @@ export function AssistantView() {
         window.clearTimeout(replyTimerRef.current);
       }
     };
+  }, []);
+
+  // Connect to the integrated assistant: probe once, then restore the most
+  // recent conversation. Any failure keeps the original demo experience.
+  useEffect(() => {
+    let cancelled = false;
+    const boot = async () => {
+      if (!isSignedIn()) return;
+      try {
+        const status = await fetchAssistantStatus();
+        if (cancelled) return;
+        setLive(status.configured);
+        const list = await fetchConversations();
+        if (cancelled) return;
+        const first = list[0];
+        if (first) {
+          conversationIdRef.current = first.id;
+          const stored = await fetchConversationMessages(first.id);
+          if (cancelled) return;
+          initialCountRef.current = Math.max(stored.length, 1);
+          setMessages(stored.length ? stored.map(toChatMessage) : liveWelcomeMessages(userName));
+        } else {
+          initialCountRef.current = 1;
+          setMessages(liveWelcomeMessages(userName));
+        }
+      } catch {
+        if (!cancelled) setLive(false); // offline → demo fallback stays
+      }
+    };
+    void boot();
+    return () => {
+      cancelled = true;
+    };
+    // Mount only: reconnecting on every render would duplicate history reads.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
@@ -195,6 +267,41 @@ export function AssistantView() {
     setDraft("");
     setIsReplying(true);
 
+    if (live) {
+      void (async () => {
+        try {
+          const res = await sendAssistantMessage(trimmed, conversationIdRef.current ?? undefined);
+          conversationIdRef.current = res.conversationId;
+          const r = res.reply;
+          const replyMsg: ChatMessage = {
+            id: `ast-${Date.now()}`,
+            role: "assistant",
+            text: r.text,
+            subtitle: r.degraded
+              ? "ASTRA could not reach the AI service just now — your message was saved and will be kept in context."
+              : r.dataAsOf
+                ? "Answered from your recorded measurements — informational only, not a medical diagnosis."
+                : "You have no measurements recorded yet, so ASTRA answered without personal health data.",
+          };
+          if (r.metrics.length > 0) {
+            replyMsg.metricsTitle = "From your records:";
+            replyMsg.metrics = r.metrics;
+          }
+          setMessages((prev) => [...prev, replyMsg]);
+        } catch {
+          // Graceful degradation: the original demo reply, clearly labelled.
+          const demo = buildDemoReply(trimmed, data);
+          setMessages((prev) => [
+            ...prev,
+            { ...demo, footnote: "Backend assistant unreachable — offline demo response shown." },
+          ]);
+        } finally {
+          setIsReplying(false);
+        }
+      })();
+      return;
+    }
+
     replyTimerRef.current = window.setTimeout(() => {
       setMessages((prev) => [...prev, buildDemoReply(trimmed, data)]);
       setIsReplying(false);
@@ -207,7 +314,15 @@ export function AssistantView() {
       replyTimerRef.current = null;
     }
     setIsReplying(false);
-    setMessages(INITIAL_MESSAGES);
+    if (live) {
+      // Start a fresh conversation server-side on the next message.
+      conversationIdRef.current = null;
+      initialCountRef.current = 1;
+      setMessages(liveWelcomeMessages(userName));
+    } else {
+      initialCountRef.current = INITIAL_MESSAGES.length;
+      setMessages(INITIAL_MESSAGES);
+    }
   };
 
   return (
@@ -224,7 +339,7 @@ export function AssistantView() {
                 AI Assistant
               </h1>
               <span className="rounded-full border border-dash-cyan/45 bg-dash-blue/25 px-[10px] py-[2px] text-[12px] font-medium text-dash-ice">
-                Demo Mode
+                {live ? "Connected" : "Demo Mode"}
               </span>
             </div>
             <p className="mt-[2px] text-[14.5px] leading-[20px] text-dash-muted sm:text-[15.5px]">
@@ -409,6 +524,12 @@ export function AssistantView() {
                       <p className="mt-[10px] border-t border-dash-line pt-[8px] text-[12px] text-dash-muted">
                         Demo response · Displays sample metrics for demonstration only, not medical
                         advice.
+                      </p>
+                    )}
+
+                    {msg.footnote && (
+                      <p className="mt-[10px] border-t border-dash-line pt-[8px] text-[12px] text-dash-muted">
+                        {msg.footnote}
                       </p>
                     )}
                   </div>

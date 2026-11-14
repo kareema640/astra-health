@@ -12,6 +12,12 @@ const schema = z.object({
   BCRYPT_ROUNDS: z.coerce.number().int().min(10).max(15).default(12),
   // Comma-separated exact origins allowed to call the API with credentials.
   CORS_ORIGINS: z.string().default("http://localhost:5173,http://127.0.0.1:5173"),
+  // AI Assistant — provider kept from the standalone chatbot (Google Gemini).
+  // Optional: without a key the assistant still works and replies with its
+  // honest "temporarily unavailable" fallback, never an invented answer.
+  GEMINI_API_KEY: z.string().optional(),
+  GEMINI_MODEL: z.string().default("gemini-3.5-flash-lite"),
+  GEMINI_BASE_URL: z.string().default("https://generativelanguage.googleapis.com/v1beta"),
 });
 
 const parsed = schema.safeParse(process.env);
